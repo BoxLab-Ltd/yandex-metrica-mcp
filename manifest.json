@@ -1,0 +1,37 @@
+{
+    "manifest_version": "0.1",
+    "name": "yandex-metrica-mcp",
+    "display_name": "Yandex Metrica",
+    "version": "0.1.0",
+    "description": "Query Yandex Metrica web-analytics reports through an AI agent.",
+    "author": { "name": "boxlab" },
+    "license": "MIT",
+    "homepage": "https://github.com/boxlab/yandex-metrica-mcp",
+    "server": {
+        "type": "node",
+        "entry_point": "dist/index.js",
+        "mcp_config": {
+            "command": "node",
+            "args": ["${__dirname}/dist/index.js"],
+            "env": {
+                "YANDEX_METRIKA_TOKEN": "${user_config.token}",
+                "YANDEX_METRIKA_COUNTER_ID": "${user_config.counter_id}"
+            }
+        }
+    },
+    "user_config": {
+        "token": {
+            "type": "string",
+            "title": "Yandex Metrica OAuth token",
+            "description": "Token for an app with the metrika:read scope.",
+            "sensitive": true,
+            "required": true
+        },
+        "counter_id": {
+            "type": "string",
+            "title": "Default counter id",
+            "description": "Optional. Lets tools omit counterId.",
+            "required": false
+        }
+    }
+}

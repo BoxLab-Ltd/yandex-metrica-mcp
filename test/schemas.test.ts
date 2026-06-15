@@ -1,0 +1,94 @@
+import { describe, expect, it } from 'bun:test'
+import {
+    ComparisonResponseSchema,
+    CountersResponseSchema,
+    DataResponseSchema,
+    DrilldownResponseSchema,
+    GoalsResponseSchema,
+} from '../src/api/schemas.js'
+
+describe('response schemas (samples from the verified contract)', () => {
+    it('parses a /stat/v1/data response and keeps extra dimension fields', () => {
+        const parsed = DataResponseSchema.parse({
+            query: { ids: [1] },
+            data: [
+                {
+                    dimensions: [
+                        { name: 'Yandex', id: '2', icon_type: 'search-engine' },
+                    ],
+                    metrics: [12045.0, 9876.0],
+                },
+            ],
+            total_rows: 1,
+            sampled: false,
+            sample_share: 1.0,
+            totals: [12045.0, 9876.0],
+            min: [12045.0, 9876.0],
+            max: [12045.0, 9876.0],
+        })
+        expect(parsed.data[0]?.dimensions[0]).toMatchObject({
+            name: 'Yandex',
+            icon_type: 'search-engine',
+        })
+        expect(parsed.data[0]?.metrics).toEqual([12045, 9876])
+    })
+
+    it('parses a /comparison response with { a, b } metrics', () => {
+        const parsed = ComparisonResponseSchema.parse({
+            data: [
+                {
+                    dimensions: [{ name: 'Male', id: 'male' }],
+                    metrics: { a: [5400], b: [5810] },
+                },
+            ],
+            total_rows: 1,
+            sampled: false,
+        })
+        expect(parsed.data[0]?.metrics.a).toEqual([5400])
+        expect(parsed.data[0]?.metrics.b).toEqual([5810])
+    })
+
+    it('parses a /drilldown response with a singular dimension and expand', () => {
+        const parsed = DrilldownResponseSchema.parse({
+            data: [
+                {
+                    dimension: { id: '100', name: 'Windows' },
+                    metrics: [21779],
+                    expand: true,
+                },
+            ],
+            total_rows: 1,
+            sampled: false,
+        })
+        expect(parsed.data[0]?.dimension.name).toBe('Windows')
+        expect(parsed.data[0]?.expand).toBe(true)
+    })
+
+    it('tolerates null metric values', () => {
+        const parsed = DataResponseSchema.parse({
+            data: [{ dimensions: [{ name: null }], metrics: [null, 5] }],
+            total_rows: 1,
+        })
+        expect(parsed.data[0]?.metrics).toEqual([null, 5])
+    })
+
+    it('parses management counters and goals', () => {
+        const counters = CountersResponseSchema.parse({
+            rows: 1,
+            counters: [
+                {
+                    id: 123,
+                    name: 'Site',
+                    site2: { site: 'example.com' },
+                    status: 'Active',
+                },
+            ],
+        })
+        expect(counters.counters[0]?.site2?.site).toBe('example.com')
+
+        const goals = GoalsResponseSchema.parse({
+            goals: [{ id: 7, name: 'Purchase', type: 'action' }],
+        })
+        expect(goals.goals[0]?.name).toBe('Purchase')
+    })
+})

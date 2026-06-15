@@ -1,0 +1,52 @@
+{
+    "name": "yandex-metrica-mcp",
+    "version": "0.1.0",
+    "description": "Model Context Protocol (MCP) server for Yandex Metrica — query web analytics reports through an AI agent.",
+    "keywords": [
+        "mcp",
+        "model-context-protocol",
+        "yandex",
+        "metrica",
+        "metrika",
+        "analytics",
+        "web-analytics"
+    ],
+    "license": "MIT",
+    "type": "module",
+    "engines": {
+        "node": ">=18"
+    },
+    "bin": {
+        "yandex-metrica-mcp": "dist/index.js"
+    },
+    "main": "dist/index.js",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "dev": "bun --watch src/index.ts",
+        "start": "node dist/index.js",
+        "auth": "bun src/index.ts auth",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "test": "bun test",
+        "test:watch": "bun test --watch",
+        "prepublishOnly": "bun run build"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/bun": "^1.3.14",
+        "@types/node": "^25.9.3",
+        "eslint": "^10.5.0",
+        "eslint-config-prettier": "^10.1.8",
+        "prettier": "^3.8.4",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.61.0"
+    }
+}
