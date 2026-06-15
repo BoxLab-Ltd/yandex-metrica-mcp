@@ -24,11 +24,12 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsc -p tsconfig.json",
+        "build": "tsc -p tsconfig.build.json",
         "dev": "bun --watch src/index.ts",
         "start": "node dist/index.js",
         "auth": "bun src/index.ts auth",
-        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "try": "bun scripts/try.ts",
+        "typecheck": "tsc -p tsconfig.json",
         "lint": "eslint .",
         "format": "prettier --write .",
         "test": "bun test",

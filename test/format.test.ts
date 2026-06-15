@@ -35,10 +35,10 @@ describe('formatDataResponse', () => {
             false,
         )
         const rows = out.rows as Array<Record<string, Record<string, unknown>>>
-        expect(rows[0].dimensions).toEqual({
+        expect(rows[0]!.dimensions).toEqual({
             'ym:s:searchEngineName': 'Yandex',
         })
-        expect(rows[0].metrics).toEqual({
+        expect(rows[0]!.metrics).toEqual({
             'ym:s:visits': 12045,
             'ym:s:users': 9876,
         })
@@ -56,8 +56,8 @@ describe('formatDataResponse', () => {
             ['ym:s:visits', 'ym:s:users'],
             true,
         )
-        const rows = out.rows as Array<Record<string, Record<string, unknown>>>
-        expect(rows[0].dimensions['ym:s:searchEngineName']).toMatchObject({
+        const rows = out.rows as Array<{ dimensions: Record<string, unknown> }>
+        expect(rows[0]!.dimensions['ym:s:searchEngineName']).toMatchObject({
             name: 'Yandex',
             id: '2',
             favicon: 'yandex.ru',
@@ -97,7 +97,7 @@ describe('formatComparisonResponse', () => {
             false,
         )
         const rows = out.rows as Array<{ metrics: Record<string, unknown> }>
-        expect(rows[0].metrics['ym:s:visits']).toEqual({
+        expect(rows[0]!.metrics['ym:s:visits']).toEqual({
             a: 5400,
             b: 5810,
             delta: 410,
@@ -117,7 +117,7 @@ describe('formatComparisonResponse', () => {
         const rows = out.rows as Array<{
             metrics: Record<string, { delta_pct: number | null }>
         }>
-        expect(rows[0].metrics.m.delta_pct).toBeNull()
+        expect(rows[0]!.metrics.m!.delta_pct).toBeNull()
     })
 })
 
@@ -146,12 +146,12 @@ describe('formatDrilldownResponse', () => {
             false,
         )
         const rows = out.rows as Array<Record<string, unknown>>
-        expect(rows[0].dimension).toBe('Windows')
-        expect(rows[0].dimension_id).toBe('100')
-        expect(rows[0].metrics).toEqual({
+        expect(rows[0]!.dimension).toBe('Windows')
+        expect(rows[0]!.dimension_id).toBe('100')
+        expect(rows[0]!.metrics).toEqual({
             'ym:s:visits': 21779,
             'ym:s:users': 17786,
         })
-        expect(rows[0].expandable).toBe(true)
+        expect(rows[0]!.expandable).toBe(true)
     })
 })
