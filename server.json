@@ -1,0 +1,33 @@
+{
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name": "io.github.boxlab-ltd/yandex-metrica-mcp",
+    "description": "Query Yandex Metrica web analytics — reports, trends, comparisons and metadata — through an AI agent.",
+    "repository": {
+        "url": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp",
+        "source": "github"
+    },
+    "version": "0.1.0",
+    "packages": [
+        {
+            "registryType": "npm",
+            "identifier": "yandex-metrica-mcp",
+            "version": "0.1.0",
+            "transport": {
+                "type": "stdio"
+            },
+            "environmentVariables": [
+                {
+                    "name": "YANDEX_METRIKA_TOKEN",
+                    "description": "Yandex Metrica OAuth token (metrika:read). Optional if you run the `auth` login.",
+                    "isRequired": false,
+                    "isSecret": true
+                },
+                {
+                    "name": "YANDEX_METRIKA_COUNTER_ID",
+                    "description": "Default counter id, so tools may omit counterId.",
+                    "isRequired": false
+                }
+            ]
+        }
+    ]
+}

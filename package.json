@@ -12,6 +12,10 @@
         "web-analytics"
     ],
     "license": "MIT",
+    "mcpName": "io.github.boxlab-ltd/yandex-metrica-mcp",
+    "publishConfig": {
+        "access": "public"
+    },
     "homepage": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp#readme",
     "repository": {
         "type": "git",
@@ -42,7 +46,7 @@
         "format": "prettier --write .",
         "test": "bun test",
         "test:watch": "bun test --watch",
-        "prepublishOnly": "bun run build"
+        "prepublishOnly": "npm run build"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
