@@ -1,6 +1,6 @@
 {
     "name": "yandex-metrica-mcp",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Model Context Protocol (MCP) server for Yandex Metrica — query web analytics reports through an AI agent.",
     "keywords": [
         "mcp",
@@ -12,7 +12,7 @@
         "web-analytics"
     ],
     "license": "MIT",
-    "mcpName": "io.github.boxlab-ltd/yandex-metrica-mcp",
+    "mcpName": "io.github.BoxLab-Ltd/yandex-metrica-mcp",
     "publishConfig": {
         "access": "public"
     },

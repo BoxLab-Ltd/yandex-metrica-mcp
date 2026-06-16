@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-16
+
+### Fixed
+
+- Correct the `mcpName` casing to `io.github.BoxLab-Ltd/yandex-metrica-mcp` so
+  the package can be claimed in the official MCP registry.
+
 ## [0.1.0] - 2026-06-16
 
 ### Added
@@ -21,5 +28,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Built-in context control: field selection on by default, low default limits,
   and sampling/quota surfaced to the model.
 
-[Unreleased]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/releases/tag/v0.1.0
