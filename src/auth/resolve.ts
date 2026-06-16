@@ -15,8 +15,9 @@ export interface ResolvedAuth {
 
 /**
  * Choose a token source, in priority order:
- *   1. A cached token.json (from `auth` login) — refreshing if OAuth client
- *      credentials are configured, otherwise used statically until it expires.
+ *   1. A cached token.json (from `auth` login). Refresh runs only when the user
+ *      has their own app with a client secret; the embedded public client has
+ *      no secret, so its ~1-year token is used statically (re-login on expiry).
  *   2. A static `YANDEX_METRIKA_TOKEN` from the environment.
  *   3. Otherwise, throw with actionable guidance.
  */
@@ -28,7 +29,9 @@ export function resolveTokenProvider(
     const cached = store.read()
 
     if (cached) {
-        if (config.oauthClientId && config.oauthClientSecret) {
+        // Refresh needs a client secret (Yandex rejects it otherwise), so it's
+        // available only with the user's own app.
+        if (config.oauthIsCustomApp && config.oauthClientSecret) {
             const oauth: OAuthClientConfig = {
                 clientId: config.oauthClientId,
                 clientSecret: config.oauthClientSecret,
@@ -46,7 +49,7 @@ export function resolveTokenProvider(
         }
         return {
             provider: new StaticTokenProvider(cached.accessToken),
-            mode: `token file without refresh — set YANDEX_OAUTH_CLIENT_ID/SECRET to auto-refresh (${store.path})`,
+            mode: `token file (${store.path}); ~1-year token, re-run \`auth\` when it expires`,
         }
     }
 
@@ -58,8 +61,8 @@ export function resolveTokenProvider(
     }
 
     throw new Error(
-        'No Yandex Metrica credentials found. Either set YANDEX_METRIKA_TOKEN, ' +
-            'or set YANDEX_OAUTH_CLIENT_ID and YANDEX_OAUTH_CLIENT_SECRET and run ' +
-            '`yandex-metrica-mcp auth` to sign in.',
+        'No Yandex Metrica credentials found. Run `yandex-metrica-mcp auth` to ' +
+            'sign in with your Yandex account, or set YANDEX_METRIKA_TOKEN to a ' +
+            'static OAuth token.',
     )
 }

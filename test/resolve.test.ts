@@ -62,8 +62,9 @@ describe('resolveTokenProvider', () => {
                 loadConfig(env),
                 env,
             )
-            // No OAuth client creds → static use of the cached access token.
-            expect(mode).toMatch(/token file without refresh/)
+            // Embedded public client (no secret) → static use of the token.
+            expect(mode).toMatch(/token file/)
+            expect(provider.canRefresh()).toBe(false)
             expect(await provider.getAccessToken()).toBe('cached-tok')
         } finally {
             cleanup()

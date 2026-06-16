@@ -8,6 +8,15 @@ export const SERVER_NAME = pkg.name
 export const SERVER_VERSION = pkg.version
 
 /**
+ * Built-in public OAuth client for the `auth` flow, so users don't have to
+ * register their own Yandex app. It is a PUBLIC client: only the client_id ships
+ * (no secret). PKCE authenticates the exchange; the ~1-year token means refresh
+ * (which would need a secret) isn't required. Override with YANDEX_OAUTH_CLIENT_ID
+ * to use your own app (set YANDEX_OAUTH_CLIENT_SECRET too to enable refresh).
+ */
+export const EMBEDDED_OAUTH_CLIENT_ID = '6f14d1c1384440b1b2915f6d956da84b'
+
+/**
  * Resolved, validated runtime configuration for the server.
  *
  * Everything is sourced from environment variables so the server stays
@@ -16,9 +25,11 @@ export const SERVER_VERSION = pkg.version
 export interface Config {
     /** Static Yandex Metrica OAuth token (alternative to the `auth` login). */
     readonly token?: string
-    /** Yandex OAuth app client id — enables the `auth` flow and token refresh. */
-    readonly oauthClientId?: string
-    /** Yandex OAuth app client secret. */
+    /** OAuth client id used by `auth` — the embedded public client, or an override. */
+    readonly oauthClientId: string
+    /** True when using the user's own app (env override) rather than the embedded one. */
+    readonly oauthIsCustomApp: boolean
+    /** OAuth client secret (only for a user's own app; enables token refresh). */
     readonly oauthClientSecret?: string
     /** Yandex ID OAuth base URL. */
     readonly oauthBaseUrl: string
@@ -67,9 +78,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     }
 
     const e = parsed.data
+    const isCustomApp = e.YANDEX_OAUTH_CLIENT_ID !== undefined
     return {
         token: e.YANDEX_METRIKA_TOKEN,
-        oauthClientId: e.YANDEX_OAUTH_CLIENT_ID,
+        oauthClientId: e.YANDEX_OAUTH_CLIENT_ID ?? EMBEDDED_OAUTH_CLIENT_ID,
+        oauthIsCustomApp: isCustomApp,
         oauthClientSecret: e.YANDEX_OAUTH_CLIENT_SECRET,
         oauthBaseUrl: e.YANDEX_OAUTH_BASE_URL,
         defaultCounterId: e.YANDEX_METRIKA_COUNTER_ID,

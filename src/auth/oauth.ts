@@ -1,14 +1,24 @@
 /**
- * Yandex ID (OAuth) client for the device authorization grant and token
+ * Yandex ID (OAuth) client for the authorization-code + PKCE flow and token
  * refresh. Pure functions over `fetch`; no MCP or filesystem dependencies.
- * Endpoints verified against yandex.com/dev/id (2026-06-15).
+ * Endpoints verified live against oauth.yandex.com (2026-06-16).
+ *
+ * Design note: PKCE (authorization-code) works WITHOUT a client secret and
+ * yields a ~1-year token, so the public client ships only a client_id. The
+ * device grant and refresh both require the secret, so refresh is available
+ * only when the user supplies their own app's client_secret. Loopback redirect
+ * is impossible — Yandex rejects http:// redirects — so we use the out-of-band
+ * `verification_code` redirect (the user copies the code shown after consent).
  */
 
 const DEFAULT_OAUTH_BASE = 'https://oauth.yandex.com'
 
+/** The out-of-band redirect that shows the code on a page for the user to copy. */
+export const OOB_REDIRECT_URI = 'https://oauth.yandex.com/verification_code'
+
 export interface OAuthClientConfig {
     clientId: string
-    /** Required by Yandex for the token exchange and refresh. */
+    /** Only needed for the refresh grant (i.e. a user's own app). */
     clientSecret?: string
     /** Override for tests; defaults to https://oauth.yandex.com. */
     baseUrl?: string
@@ -22,20 +32,6 @@ export interface TokenSet {
     refreshToken?: string
     expiresAt: number
     scope?: string
-}
-
-export interface DeviceCodeResponse {
-    deviceCode: string
-    userCode: string
-    verificationUrl: string
-    interval: number
-    expiresIn: number
-}
-
-/** Pending result while the user has not yet entered the code. */
-export interface DevicePending {
-    pending: true
-    slowDown?: boolean
 }
 
 export class OAuthError extends Error {
@@ -105,89 +101,64 @@ function toTokenSet(data: Record<string, unknown>, nowMs: number): TokenSet {
     }
 }
 
-/** Step 1: ask Yandex for a device code + user code to show the user. */
-export async function requestDeviceCode(
-    config: OAuthClientConfig,
-    opts: { scope?: string } = {},
-): Promise<DeviceCodeResponse> {
-    const { status, data } = await postForm(config, '/device/code', {
-        client_id: config.clientId,
-        scope: opts.scope,
-    })
-    if (status !== 200 || typeof data.device_code !== 'string') {
-        throw new OAuthError(
-            typeof data.error === 'string' ? data.error : 'device_code_failed',
-            typeof data.error_description === 'string'
-                ? data.error_description
-                : 'failed to obtain a device code',
-        )
-    }
-    return {
-        deviceCode: data.device_code,
-        userCode: String(data.user_code ?? ''),
-        verificationUrl: String(
-            data.verification_url ?? data.verification_uri ?? '',
-        ),
-        interval: typeof data.interval === 'number' ? data.interval : 5,
-        expiresIn: typeof data.expires_in === 'number' ? data.expires_in : 300,
-    }
+export interface AuthorizeUrlParams {
+    codeChallenge: string
+    scope?: string
+    /** Defaults to the out-of-band `verification_code` redirect. */
+    redirectUri?: string
+    state?: string
 }
 
-/** Step 2 (single attempt): exchange the device code for tokens. */
-export async function exchangeDeviceCode(
+/** Build the `/authorize` URL the user opens to grant access (PKCE, S256). */
+export function buildAuthorizeUrl(
     config: OAuthClientConfig,
-    deviceCode: string,
-    nowMs: number = Date.now(),
-): Promise<TokenSet | DevicePending> {
-    const { status, data } = await postForm(config, '/token', {
-        grant_type: 'device_code',
-        code: deviceCode,
+    params: AuthorizeUrlParams,
+): string {
+    const q = new URLSearchParams({
+        response_type: 'code',
         client_id: config.clientId,
+        redirect_uri: params.redirectUri ?? OOB_REDIRECT_URI,
+        code_challenge: params.codeChallenge,
+        code_challenge_method: 'S256',
+    })
+    if (params.scope) q.set('scope', params.scope)
+    if (params.state) q.set('state', params.state)
+    return `${baseUrl(config)}/authorize?${q.toString()}`
+}
+
+/** Exchange an authorization code for tokens using PKCE (no secret required). */
+export async function exchangeCode(
+    config: OAuthClientConfig,
+    params: { code: string; codeVerifier: string; redirectUri?: string },
+    nowMs: number = Date.now(),
+): Promise<TokenSet> {
+    const { status, data } = await postForm(config, '/token', {
+        grant_type: 'authorization_code',
+        code: params.code,
+        client_id: config.clientId,
+        code_verifier: params.codeVerifier,
+        redirect_uri: params.redirectUri ?? OOB_REDIRECT_URI,
+        // Sent only if the user configured their own app with a secret.
         client_secret: config.clientSecret,
     })
-    if (status === 200) return toTokenSet(data, nowMs)
-    const error = typeof data.error === 'string' ? data.error : 'unknown_error'
-    if (error === 'authorization_pending') return { pending: true }
-    if (error === 'slow_down') return { pending: true, slowDown: true }
-    throw new OAuthError(
-        error,
-        typeof data.error_description === 'string'
-            ? data.error_description
-            : 'token exchange failed',
-    )
-}
-
-/** Step 2 (loop): poll until the user authorizes, the code expires, or errors. */
-export async function pollForToken(
-    config: OAuthClientConfig,
-    device: DeviceCodeResponse,
-    opts: { sleep?: (ms: number) => Promise<void>; now?: () => number } = {},
-): Promise<TokenSet> {
-    const sleep = opts.sleep ?? (ms => new Promise(r => setTimeout(r, ms)))
-    const now = opts.now ?? (() => Date.now())
-    let intervalMs = device.interval * 1000
-    const deadline = now() + device.expiresIn * 1000
-
-    for (;;) {
-        await sleep(intervalMs)
-        if (now() > deadline) {
-            throw new OAuthError(
-                'expired_token',
-                'device code expired before authorization',
-            )
-        }
-        const result = await exchangeDeviceCode(
-            config,
-            device.deviceCode,
-            now(),
+    if (status !== 200) {
+        throw new OAuthError(
+            typeof data.error === 'string'
+                ? data.error
+                : 'token_exchange_failed',
+            typeof data.error_description === 'string'
+                ? data.error_description
+                : 'failed to exchange the authorization code',
         )
-        if ('accessToken' in result) return result
-        // RFC 8628: bump the interval by 5s on slow_down; cap for tidiness.
-        if (result.slowDown) intervalMs = Math.min(intervalMs + 5000, 60_000)
     }
+    return toTokenSet(data, nowMs)
 }
 
-/** Exchange a refresh token for a fresh token set. */
+/**
+ * Exchange a refresh token for a fresh token set. Requires `clientSecret`
+ * (Yandex rejects refresh without it), so this is only used for a user's own
+ * app — the embedded public client relies on the ~1-year token + re-login.
+ */
 export async function refreshToken(
     config: OAuthClientConfig,
     refresh: string,

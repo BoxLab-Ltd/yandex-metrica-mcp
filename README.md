@@ -37,22 +37,27 @@ transport, a loopback OAuth flow, write tools (behind an explicit flag).
 
 ## Authentication
 
-Pick one of two modes:
-
-**A. Static token (simplest).** Get a token for an app with the `metrika:read`
-scope at <https://oauth.yandex.com> and pass it as `YANDEX_METRIKA_TOKEN`.
-
-**B. Interactive login with auto-refresh.** Register your own OAuth app
-(`metrika:read`), set `YANDEX_OAUTH_CLIENT_ID` and `YANDEX_OAUTH_CLIENT_SECRET`,
-then run a one-time device-flow login:
+**Recommended: interactive login.** No app registration needed — the server
+ships a built-in public OAuth client. Run once:
 
 ```bash
 yandex-metrica-mcp auth     # or, in dev: bun run auth
 ```
 
-It prints a URL and a code; you confirm in the browser. Tokens are cached at
-`~/.config/yandex-metrica-mcp/token.json` (mode 0600) and refreshed
-automatically. A cached login takes precedence over `YANDEX_METRIKA_TOKEN`.
+It opens a Yandex consent page; after you approve, Yandex shows a code that you
+paste back into the terminal. The token is cached at
+`~/.config/yandex-metrica-mcp/token.json` (mode 0600) and is valid for ~1 year;
+re-run `auth` when it expires. The login uses authorization-code + PKCE, so **no
+client secret is stored anywhere**. A cached login takes precedence over
+`YANDEX_METRIKA_TOKEN`.
+
+**Alternative: static token.** Get a token for an app with the `metrika:read`
+scope at <https://oauth.yandex.ru> and pass it as `YANDEX_METRIKA_TOKEN` — handy
+for CI or non-interactive use.
+
+**Own OAuth app (optional).** To use your own app instead of the built-in one,
+set `YANDEX_OAUTH_CLIENT_ID`; add `YANDEX_OAUTH_CLIENT_SECRET` to also enable
+automatic token refresh.
 
 ## Usage
 

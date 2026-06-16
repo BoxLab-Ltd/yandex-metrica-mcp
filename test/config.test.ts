@@ -13,18 +13,20 @@ describe('loadConfig', () => {
         expect(cfg.userAgent).toMatch(/^yandex-metrica-mcp\//)
     })
 
-    it('allows a missing token (credentials may come from a token file)', () => {
+    it('allows a missing token and defaults to the embedded public client', () => {
         const cfg = loadConfig({} as NodeJS.ProcessEnv)
         expect(cfg.token).toBeUndefined()
-        expect(cfg.oauthClientId).toBeUndefined()
+        expect(cfg.oauthClientId).toBe('6f14d1c1384440b1b2915f6d956da84b')
+        expect(cfg.oauthIsCustomApp).toBe(false)
     })
 
-    it('reads the OAuth client credentials when present', () => {
+    it('lets the user override with their own app credentials', () => {
         const cfg = loadConfig({
             YANDEX_OAUTH_CLIENT_ID: 'cid',
             YANDEX_OAUTH_CLIENT_SECRET: 'sec',
         } as NodeJS.ProcessEnv)
         expect(cfg.oauthClientId).toBe('cid')
+        expect(cfg.oauthIsCustomApp).toBe(true)
         expect(cfg.oauthClientSecret).toBe('sec')
         expect(cfg.oauthBaseUrl).toBe('https://oauth.yandex.com')
     })
