@@ -134,6 +134,72 @@ export const DIMENSIONS: CatalogEntry[] = [
     { id: 'ym:s:date', title: 'Visit date', namespace: 'visits' },
     { id: 'ym:s:startOfWeek', title: 'Week bucket', namespace: 'visits' },
     { id: 'ym:s:startOfMonth', title: 'Month bucket', namespace: 'visits' },
+    { id: 'ym:s:startOfQuarter', title: 'Quarter bucket', namespace: 'visits' },
+    { id: 'ym:s:startOfYear', title: 'Year bucket', namespace: 'visits' },
+    { id: 'ym:s:dayOfWeek', title: 'Day of week', namespace: 'visits' },
+    { id: 'ym:s:hour', title: 'Hour of day', namespace: 'visits' },
+    // Geo (human-readable names; pass lang to control language)
+    {
+        id: 'ym:s:regionCountryName',
+        title: 'Country (name)',
+        namespace: 'visits',
+    },
+    { id: 'ym:s:regionCityName', title: 'City (name)', namespace: 'visits' },
+    // Device / tech (extras)
+    {
+        id: 'ym:s:browserAndVersion',
+        title: 'Browser and version',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:mobilePhoneModel',
+        title: 'Mobile phone model',
+        namespace: 'visits',
+    },
+    { id: 'ym:s:screenWidth', title: 'Screen width (px)', namespace: 'visits' },
+    {
+        id: 'ym:s:screenHeight',
+        title: 'Screen height (px)',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:browserLanguage',
+        title: 'Browser language',
+        namespace: 'visits',
+    },
+    // Source (social / recommendation / messenger; default lastsign attribution)
+    {
+        id: 'ym:s:lastsignSocialNetwork',
+        title: 'Social network',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:lastsignRecommendationSystem',
+        title: 'Recommendation system',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:lastsignMessenger',
+        title: 'Messenger',
+        namespace: 'visits',
+    },
+    // E-commerce
+    { id: 'ym:s:productName', title: 'Product name', namespace: 'visits' },
+    {
+        id: 'ym:s:productCategoryLevel1',
+        title: 'Product category (level 1)',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:productBrand',
+        title: 'Product brand',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:purchaseID',
+        title: 'Purchase / order ID',
+        namespace: 'visits',
+    },
 ]
 
 export const METRICS: CatalogEntry[] = [
@@ -178,6 +244,47 @@ export const METRICS: CatalogEntry[] = [
     },
     { id: 'ym:pv:pageviews', title: 'Pageviews (hits)', namespace: 'hits' },
     { id: 'ym:pv:users', title: 'Users (hits scope)', namespace: 'hits' },
+    // E-commerce (revenue uses the counter's default currency)
+    {
+        id: 'ym:s:ecommercePurchases',
+        title: 'Number of purchases',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:ecommerceConvertedRevenue',
+        title: 'Revenue (counter currency)',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:ecommerceConvertedRevenuePerPurchase',
+        title: 'Average order value (revenue per purchase)',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:ecommerceConvertedRevenuePerVisit',
+        title: 'Average revenue per session',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:productPurchasedQuantity',
+        title: 'Items purchased',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:productImpressions',
+        title: 'Product views (impressions)',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:productBasketsQuantity',
+        title: 'Items added to cart',
+        namespace: 'visits',
+    },
+    {
+        id: 'ym:s:usersPurchasePercentage',
+        title: 'Share of users who purchased (%)',
+        namespace: 'visits',
+    },
 ]
 
 /** Per-goal metric templates. Replace `<goalId>` with a real goal id. */
