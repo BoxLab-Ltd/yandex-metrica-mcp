@@ -91,4 +91,15 @@ describe('response schemas (samples from the verified contract)', () => {
         })
         expect(goals.goals[0]?.name).toBe('Purchase')
     })
+
+    it('normalizes numeric booleans the API returns (goal is_favorite 0/1)', () => {
+        const goals = GoalsResponseSchema.parse({
+            goals: [
+                { id: 1, name: 'A', is_favorite: 1 },
+                { id: 2, name: 'B', is_favorite: 0 },
+            ],
+        })
+        expect(goals.goals[0]?.is_favorite).toBe(true)
+        expect(goals.goals[1]?.is_favorite).toBe(false)
+    })
 })

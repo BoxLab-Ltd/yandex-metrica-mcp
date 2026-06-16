@@ -91,3 +91,7 @@ live counters/goals (Management API).
 4. `/bytime` has no `time_intervals` field — reconstruct the axis from
    `date1`/`date2`/`group`.
 5. Goal `conditions[]` schema varies by goal type — model loosely.
+6. Some "boolean" fields come back as numbers (0/1) — observed live for goal
+   `is_favorite` and counter `favorite`. Parse them with a flexible
+   boolean-or-number that normalizes to boolean (see `FlexibleBool` in
+   `src/api/schemas.ts`).

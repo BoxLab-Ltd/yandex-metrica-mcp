@@ -6,6 +6,14 @@ import { z } from 'zod'
  * parsing. See docs/API-NOTES.md for the verified contract.
  */
 
+/**
+ * A boolean that the Metrica API may return as a number (0/1) — observed for
+ * goal `is_favorite` and counter `favorite`. Normalizes to a real boolean.
+ */
+const FlexibleBool = z
+    .union([z.boolean(), z.number()])
+    .transform(v => Boolean(v))
+
 /** A single dimension cell. Only `name` is guaranteed; `id` is the usual extra. */
 export const DimensionObjectSchema = z
     .object({
@@ -108,6 +116,7 @@ export const CounterSchema = z
             .catchall(z.unknown())
             .optional(),
         site: z.string().optional(),
+        favorite: FlexibleBool.optional(),
         goals: z.array(z.unknown()).optional(),
     })
     .catchall(z.unknown())
@@ -124,7 +133,7 @@ export const GoalSchema = z
         id: z.number(),
         name: z.string().optional(),
         type: z.string().optional(),
-        is_favorite: z.boolean().optional(),
+        is_favorite: FlexibleBool.optional(),
         default_price: z.number().optional(),
     })
     .catchall(z.unknown())
