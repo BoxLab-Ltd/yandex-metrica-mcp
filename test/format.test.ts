@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 import {
+    formatBytimeResponse,
     formatComparisonResponse,
     formatDataResponse,
     formatDrilldownResponse,
 } from '../src/mcp/format.js'
 import type {
+    BytimeResponse,
     ComparisonResponse,
     DataResponse,
     DrilldownResponse,
@@ -153,5 +155,39 @@ describe('formatDrilldownResponse', () => {
             'ym:s:users': 17786,
         })
         expect(rows[0]!.expandable).toBe(true)
+    })
+})
+
+describe('formatBytimeResponse', () => {
+    it('maps each metric to its per-interval series and surfaces the time axis', () => {
+        const resp = {
+            query: { date1: '2026-06-08', date2: '2026-06-14' },
+            data: [
+                {
+                    dimensions: [],
+                    metrics: [[1200, 1340, 1100, 1500, 1620, 980, 1010]],
+                },
+            ],
+            totals: [[1200, 1340, 1100, 1500, 1620, 980, 1010]],
+            total_rows: 1,
+            sampled: false,
+        } as unknown as BytimeResponse
+
+        const out = formatBytimeResponse(
+            resp,
+            [],
+            ['ym:s:visits'],
+            'day',
+            false,
+        )
+        const rows = out.rows as Array<{ metrics: Record<string, unknown> }>
+        expect(rows[0]!.metrics['ym:s:visits']).toEqual([
+            1200, 1340, 1100, 1500, 1620, 980, 1010,
+        ])
+        expect(out.time_axis).toMatchObject({
+            group: 'day',
+            date1: '2026-06-08',
+            date2: '2026-06-14',
+        })
     })
 })

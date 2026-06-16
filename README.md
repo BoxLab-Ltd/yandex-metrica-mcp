@@ -20,13 +20,14 @@ flexible report tools, strict token/context discipline, read-only by default.
 - `run_report` — flexible wrapper over the Reporting API (`/stat/v1/data`).
 - `run_comparison` — compare two periods with absolute and percentage deltas.
 - `run_drilldown` — drill down through a dimension tree.
+- `run_timeseries` — metrics split into a time series (`/bytime`) for trends.
 - `get_metadata` — discover available counters, goals, and common
   dimensions/metrics so the model queries with real field names.
 - Built-in context control: field selection on by default, low default row
   limits, and sampling/quota surfaced back to the model.
 
 Planned for later: Logs API (raw row-level export → local SQL), Streamable HTTP
-transport, a loopback OAuth flow, write tools (behind an explicit flag).
+transport, write tools (behind an explicit flag).
 
 ## Requirements
 

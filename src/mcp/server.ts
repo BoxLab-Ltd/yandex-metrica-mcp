@@ -12,6 +12,7 @@ import { registerGetMetadata } from './tools/getMetadata.js'
 import { registerRunComparison } from './tools/runComparison.js'
 import { registerRunDrilldown } from './tools/runDrilldown.js'
 import { registerRunReport } from './tools/runReport.js'
+import { registerRunTimeseries } from './tools/runTimeseries.js'
 
 /**
  * Build a fully configured MCP server: the Metrica API client, the tool
@@ -40,6 +41,7 @@ export function createServer(config: Config = loadConfig()): McpServer {
     registerRunReport(server, ctx)
     registerRunComparison(server, ctx)
     registerRunDrilldown(server, ctx)
+    registerRunTimeseries(server, ctx)
 
     return server
 }

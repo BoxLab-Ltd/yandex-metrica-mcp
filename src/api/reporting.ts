@@ -1,8 +1,10 @@
 import type { MetricaClient } from './client.js'
 import {
+    BytimeResponseSchema,
     ComparisonResponseSchema,
     DataResponseSchema,
     DrilldownResponseSchema,
+    type BytimeResponse,
     type ComparisonResponse,
     type DataResponse,
     type DrilldownResponse,
@@ -130,4 +132,44 @@ export async function runDrilldown(
         parent_id: p.parentId ? JSON.stringify(p.parentId) : undefined,
     })
     return DrilldownResponseSchema.parse(raw)
+}
+
+/** Inputs for a time-series report. */
+export interface BytimeParams {
+    ids: number | number[]
+    metrics: string[]
+    dimensions?: string[]
+    date1?: string
+    date2?: string
+    /** Interval granularity: all, auto, hour, day, week, month, quarter, year, … */
+    group?: string
+    filters?: string
+    accuracy?: string
+    timezone?: string
+    lang?: string
+    /** Max number of dimension rows charted (max 30). */
+    topKeys?: number
+    includeUndefined?: boolean
+}
+
+/** `GET /stat/v1/data/bytime` — metrics split into a series over time intervals. */
+export async function runBytime(
+    client: MetricaClient,
+    p: BytimeParams,
+): Promise<BytimeResponse> {
+    const raw = await client.request('/stat/v1/data/bytime', {
+        ids: toIds(p.ids),
+        metrics: p.metrics,
+        dimensions: p.dimensions,
+        date1: p.date1,
+        date2: p.date2,
+        group: p.group,
+        filters: p.filters,
+        accuracy: p.accuracy,
+        timezone: p.timezone,
+        lang: p.lang,
+        top_keys: p.topKeys,
+        include_undefined: p.includeUndefined,
+    })
+    return BytimeResponseSchema.parse(raw)
 }

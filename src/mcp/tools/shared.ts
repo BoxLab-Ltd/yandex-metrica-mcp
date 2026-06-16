@@ -174,6 +174,43 @@ export const comparisonInputShape = {
     fullResponse,
 }
 
+/** Valid `group` granularities for the time-series endpoint. */
+export const TIMESERIES_GROUPS = [
+    'all',
+    'auto',
+    'hour',
+    'day',
+    'week',
+    'month',
+    'quarter',
+    'year',
+] as const
+
+/** Input shape for run_timeseries (/bytime). */
+export const timeseriesInputShape = {
+    counterId,
+    metrics,
+    dimensions,
+    date1: date('Start date'),
+    date2: date('End date'),
+    group: z
+        .enum(TIMESERIES_GROUPS)
+        .optional()
+        .describe('Time interval granularity. Default day.'),
+    filters,
+    accuracy,
+    timezone,
+    includeUndefined,
+    topKeys: z
+        .number()
+        .int()
+        .positive()
+        .max(30)
+        .optional()
+        .describe('Max number of dimension rows to chart (max 30). Default 7.'),
+    fullResponse,
+}
+
 /** Sensible default date window: the last 7 full days (ending yesterday). */
 export const DEFAULT_DATE1 = '7daysAgo'
 export const DEFAULT_DATE2 = 'yesterday'

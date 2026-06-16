@@ -1,5 +1,6 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type {
+    BytimeResponse,
     ComparisonResponse,
     DataResponse,
     DimensionObject,
@@ -170,6 +171,52 @@ export function formatDrilldownResponse(
             totals: resp.totals ? mapMetrics(metrics, resp.totals) : null,
             meta: buildMeta(resp, rows.length),
             hint: 'To expand a row where expandable=true, call run_drilldown again with parentId set to the path of dimension ids/names down to that row.',
+        },
+        resp,
+    )
+}
+
+/** Map each requested metric id to its time-series array (one value per interval). */
+function mapMetricSeries(
+    ids: string[],
+    series: (number | null)[][],
+): Record<string, (number | null)[]> {
+    const out: Record<string, (number | null)[]> = {}
+    ids.forEach((id, i) => {
+        out[id] = series[i] ?? []
+    })
+    return out
+}
+
+/**
+ * Shape a `/stat/v1/data/bytime` response. Each metric becomes an array of
+ * values, one per time interval from date1..date2 at the given `group`. The
+ * interval timestamps are not returned by the API, so we surface `group` and
+ * the resolved date range and leave axis reconstruction to the caller.
+ */
+export function formatBytimeResponse(
+    resp: BytimeResponse,
+    dimensions: string[],
+    metrics: string[],
+    group: string,
+    full: boolean,
+): Record<string, unknown> {
+    const rows = resp.data.map(row => ({
+        dimensions: mapDimensions(dimensions, row.dimensions, full),
+        metrics: mapMetricSeries(metrics, row.metrics),
+    }))
+    const q = resp.query as Record<string, unknown> | undefined
+    return withNotice(
+        {
+            rows,
+            totals: resp.totals ? mapMetricSeries(metrics, resp.totals) : null,
+            time_axis: {
+                group,
+                date1: (q?.date1 as string) ?? null,
+                date2: (q?.date2 as string) ?? null,
+                note: 'Each metric is an array of values, one per interval from date1 to date2 at the given group.',
+            },
+            meta: buildMeta(resp, rows.length),
         },
         resp,
     )
