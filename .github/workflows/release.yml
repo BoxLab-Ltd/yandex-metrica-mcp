@@ -1,0 +1,27 @@
+name: Release
+
+# Publishes to npm with provenance when a GitHub Release is published.
+# Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret. Configure the
+# trusted publisher once on npmjs.com (package Settings) pointing at this repo
+# and workflow file. Runs on Node (not Bun) so the published artifact stays
+# Node-only; the build is plain tsc.
+on:
+    release:
+        types: [published]
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  registry-url: https://registry.npmjs.org
+            - run: npm install -g npm@latest
+            - run: npm install
+            - run: npm publish
