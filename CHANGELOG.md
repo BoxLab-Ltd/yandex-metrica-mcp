@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-16
+
+### Changed
+
+- Automated releases: publish to npm with provenance from CI via Trusted
+  Publishing (OIDC) on a GitHub Release, with a version/tag guard.
+- Bump `actions/checkout` and `actions/setup-node` to v6 in workflows.
+
 ## [0.1.1] - 2026-06-16
 
 ### Fixed
@@ -28,6 +36,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Built-in context control: field selection on by default, low default limits,
   and sampling/quota surfaced to the model.
 
-[Unreleased]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/BoxLab-Ltd/yandex-metrica-mcp/releases/tag/v0.1.0
