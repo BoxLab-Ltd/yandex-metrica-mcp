@@ -12,6 +12,14 @@
         "web-analytics"
     ],
     "license": "MIT",
+    "homepage": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/BoxLab-Ltd/yandex-metrica-mcp.git"
+    },
+    "bugs": {
+        "url": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp/issues"
+    },
     "type": "module",
     "engines": {
         "node": ">=18"

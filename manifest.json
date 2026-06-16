@@ -6,7 +6,7 @@
     "description": "Query Yandex Metrica web-analytics reports through an AI agent.",
     "author": { "name": "boxlab" },
     "license": "MIT",
-    "homepage": "https://github.com/boxlab/yandex-metrica-mcp",
+    "homepage": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp",
     "server": {
         "type": "node",
         "entry_point": "dist/index.js",
