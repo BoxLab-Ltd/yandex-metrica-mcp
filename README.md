@@ -1,9 +1,16 @@
 # yandex-metrica-mcp
 
+[![CI](https://github.com/BoxLab-Ltd/yandex-metrica-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/BoxLab-Ltd/yandex-metrica-mcp/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/yandex-metrica-mcp.svg)](https://www.npmjs.com/package/yandex-metrica-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for
 **Yandex Metrica**. It lets an AI agent query your web-analytics data — traffic,
 sources, landing pages, conversions, geography, devices and trends — through a
 small set of flexible, read-only tools.
+
+> Read-only by design, no secrets stored in the package: interactive login uses
+> a built-in public OAuth client with PKCE, and the server talks only to Yandex.
 
 > Status: early development (v0.1, work in progress). General-purpose: SEO is
 > one of many use cases, not the focus.
