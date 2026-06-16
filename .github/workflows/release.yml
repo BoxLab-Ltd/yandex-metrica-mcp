@@ -17,11 +17,18 @@ jobs:
     publish:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
                   registry-url: https://registry.npmjs.org
+            - name: Verify package version matches the release tag
+              run: |
+                  PKG="$(node -p "require('./package.json').version")"
+                  TAG="${GITHUB_REF_NAME#v}"
+                  test "$PKG" = "$TAG" || {
+                    echo "package.json version ($PKG) does not match release tag ($TAG)"; exit 1;
+                  }
             - run: npm install -g npm@latest
             - run: npm install
             - run: npm publish
