@@ -59,6 +59,8 @@ export function registerGetMetadata(server: McpServer, ctx: ToolContext): void {
                             'A single query must not mix ym:s: (visits) and ym:pv: (hits) namespaces.',
                             'For per-goal metrics, replace <goalId> in goal_metric_templates with a real goal id.',
                             'Source dimensions/metrics use the lastsign (last significant) attribution by default.',
+                            'E-commerce revenue ids contain a <currency> token: the API resolves it to the counter currency, or substitute an ISO code (e.g. ym:s:ecommerceRUBConvertedRevenue). Requires e-commerce enabled on the counter.',
+                            'When analyzing raw traffic (visits/users), also request ym:s:robotPercentage: bots are counted in visits and a single bot spike can invert a breakdown.',
                         ],
                     },
                 }

@@ -239,29 +239,31 @@ export const METRICS: CatalogEntry[] = [
     },
     {
         id: 'ym:s:robotPercentage',
-        title: '% robot traffic',
+        title: '% robot (bot) traffic — pull this whenever you report raw visits/users; one bot spike can dominate a peak',
         namespace: 'visits',
     },
     { id: 'ym:pv:pageviews', title: 'Pageviews (hits)', namespace: 'hits' },
     { id: 'ym:pv:users', title: 'Users (hits scope)', namespace: 'hits' },
-    // E-commerce (revenue uses the counter's default currency)
+    // E-commerce. Revenue ids carry a <currency> token: the API resolves it to
+    // the counter currency (or substitute an ISO code, e.g. RUB/USD). Requires
+    // e-commerce enabled on the counter. Non-revenue ids have no currency token.
     {
         id: 'ym:s:ecommercePurchases',
         title: 'Number of purchases',
         namespace: 'visits',
     },
     {
-        id: 'ym:s:ecommerceConvertedRevenue',
-        title: 'Revenue (counter currency)',
+        id: 'ym:s:ecommerce<currency>ConvertedRevenue',
+        title: 'Revenue (<currency> = counter currency, or an ISO code like RUB/USD)',
         namespace: 'visits',
     },
     {
-        id: 'ym:s:ecommerceConvertedRevenuePerPurchase',
+        id: 'ym:s:ecommerce<currency>ConvertedRevenuePerPurchase',
         title: 'Average order value (revenue per purchase)',
         namespace: 'visits',
     },
     {
-        id: 'ym:s:ecommerceConvertedRevenuePerVisit',
+        id: 'ym:s:ecommerce<currency>ConvertedRevenuePerVisit',
         title: 'Average revenue per session',
         namespace: 'visits',
     },
