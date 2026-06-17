@@ -143,6 +143,41 @@ describe('MetricaClient retry/backoff', () => {
     })
 })
 
+describe('MetricaClient transport errors', () => {
+    it('maps an AbortError (timeout) to a retryable MetricaApiError(status 0)', async () => {
+        let calls = 0
+        const fetchImpl = mock(async () => {
+            calls += 1
+            const e = new Error('aborted')
+            e.name = 'AbortError'
+            throw e
+        }) as unknown as typeof fetch
+
+        const client = makeClient(fetchImpl, { maxRetries: 1 })
+        const err = await client
+            .request('/stat/v1/data', { ids: 1 })
+            .catch((e: unknown) => e)
+        expect(err).toBeInstanceOf(MetricaApiError)
+        expect((err as MetricaApiError).status).toBe(0)
+        expect((err as MetricaApiError).errorTypes).toContain('timeout')
+        expect(calls).toBe(2) // transient → initial + 1 retry, then rethrow
+    })
+
+    it('maps a network rejection to MetricaApiError(status 0, network_error)', async () => {
+        const fetchImpl = mock(async () => {
+            throw new TypeError('fetch failed')
+        }) as unknown as typeof fetch
+
+        const client = makeClient(fetchImpl, { maxRetries: 0 })
+        const err = await client
+            .request('/stat/v1/data', { ids: 1 })
+            .catch((e: unknown) => e)
+        expect(err).toBeInstanceOf(MetricaApiError)
+        expect((err as MetricaApiError).status).toBe(0)
+        expect((err as MetricaApiError).errorTypes).toContain('network_error')
+    })
+})
+
 describe('Semaphore', () => {
     it('never lets more than `max` run concurrently', async () => {
         const sem = new Semaphore(2)

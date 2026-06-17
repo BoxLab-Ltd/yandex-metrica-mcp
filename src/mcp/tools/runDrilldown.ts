@@ -51,6 +51,7 @@ export function registerRunDrilldown(
                         resp,
                         args.metrics,
                         args.fullResponse ?? false,
+                        args.offset ?? 1,
                     ),
                 )
             } catch (err) {

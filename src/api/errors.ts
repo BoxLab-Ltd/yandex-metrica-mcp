@@ -54,9 +54,26 @@ export class MetricaApiError extends Error {
         return this.status === 503 || this.status === 504
     }
 
+    /**
+     * Client-side transient failures (timeout/network) raised with status 0.
+     * Retrying these can succeed, matching the pre-mapping behavior where a raw
+     * AbortError/network error fell through to the retry layer.
+     */
+    get isTransientLocalError(): boolean {
+        return (
+            this.status === 0 ||
+            this.errorTypes.includes('timeout') ||
+            this.errorTypes.includes('network_error')
+        )
+    }
+
     /** Whether retrying this request could plausibly succeed. */
     get isRetryable(): boolean {
-        return this.isThrottled || this.isRetryableServerError
+        return (
+            this.isThrottled ||
+            this.isRetryableServerError ||
+            this.isTransientLocalError
+        )
     }
 }
 

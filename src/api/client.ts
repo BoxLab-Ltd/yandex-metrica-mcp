@@ -197,6 +197,24 @@ export class MetricaClient {
             })
             // Read the body inside the timer scope so a stalled body is aborted too.
             text = await res.text()
+        } catch (err) {
+            // Map transport-level failures to a MetricaApiError (status 0) so the
+            // retry layer and the MCP error formatter can branch on them instead
+            // of seeing an opaque, unactionable raw error.
+            if (err instanceof MetricaApiError) throw err
+            if (err instanceof Error && err.name === 'AbortError') {
+                throw new MetricaApiError(
+                    0,
+                    `Request to Metrica API timed out after ${this.options.requestTimeoutMs}ms`,
+                    ['timeout'],
+                )
+            }
+            const detail = err instanceof Error ? err.message : String(err)
+            throw new MetricaApiError(
+                0,
+                `Network error reaching the Metrica API: ${detail}`,
+                ['network_error'],
+            )
         } finally {
             clearTimeout(timer)
         }

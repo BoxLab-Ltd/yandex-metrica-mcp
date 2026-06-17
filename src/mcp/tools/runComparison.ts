@@ -25,8 +25,9 @@ export function registerRunComparison(
             description:
                 'Compare two segments/periods (A vs B) for the same metrics and dimensions ' +
                 '(/stat/v1/data/comparison). Returns per-metric values for A and B plus the absolute ' +
-                'and percentage delta, computed server-side. Defaults to last 7 days vs the prior 7 days. ' +
-                'Read-only.',
+                'and percentage delta, computed server-side: delta = B − A (segment A is the baseline), ' +
+                'delta_pct = (B − A) / A × 100. Defaults to last 7 days (B) vs the prior 7 days (A), so a ' +
+                'positive delta means growth. Read-only.',
             inputSchema: comparisonInputShape,
             annotations: {
                 title: 'Compare Metrica segments',
@@ -62,6 +63,7 @@ export function registerRunComparison(
                         dimensions,
                         args.metrics,
                         args.fullResponse ?? false,
+                        args.offset ?? 1,
                     ),
                 )
             } catch (err) {

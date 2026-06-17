@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { MetricaApiError } from '../api/errors.js'
 import type {
     BytimeResponse,
     ComparisonResponse,
@@ -10,6 +11,7 @@ import type {
 /** The subset of response meta we surface back to the model. */
 interface SamplingMeta {
     total_rows?: number
+    total_rows_rounded?: boolean
     sampled?: boolean
     sample_share?: number
     sample_size?: number
@@ -23,6 +25,7 @@ function buildMeta(
 ): Record<string, unknown> {
     return {
         total_rows: resp.total_rows ?? null,
+        total_rows_approximate: resp.total_rows_rounded ?? false,
         returned_rows: returnedRows,
         sampled: resp.sampled ?? false,
         sample_share: resp.sample_share ?? null,
@@ -97,12 +100,44 @@ function compareMetric(
     return { a: av, b: bv, delta, delta_pct: deltaPct }
 }
 
+/**
+ * Warn the model when more rows exist than were returned, so it does not mistake
+ * one page for the whole dataset. Reads the already-built `meta` so no extra
+ * params need threading through the formatters.
+ */
+function truncationNotice(
+    structured: Record<string, unknown>,
+    offset: number,
+): string | undefined {
+    const meta = structured.meta as Record<string, unknown> | undefined
+    const total = meta?.total_rows
+    const returned = meta?.returned_rows
+    if (typeof total !== 'number' || typeof returned !== 'number') {
+        return undefined
+    }
+    // Rows accounted for up to and including this page. Only warn when rows
+    // remain AFTER this slice, so a tail/last page stays silent rather than
+    // telling the model to keep paging past the end.
+    const seen = offset - 1 + returned
+    if (seen >= total) return undefined
+    const remaining = total - seen
+    const approx = meta?.total_rows_approximate === true ? '~' : ''
+    return (
+        `Returned ${returned} of ${approx}${total} matching rows ` +
+        `(rows ${offset}-${offset + returned - 1}); ${remaining} more remain after ` +
+        `this page — raise "limit" or advance "offset" to fetch them.`
+    )
+}
+
 function withNotice(
     structured: Record<string, unknown>,
     resp: SamplingMeta,
+    offset = 1,
 ): Record<string, unknown> {
     const notice = samplingNotice(resp)
     if (notice) structured.sampling_notice = notice
+    const truncation = truncationNotice(structured, offset)
+    if (truncation) structured.truncation_notice = truncation
     return structured
 }
 
@@ -112,6 +147,7 @@ export function formatDataResponse(
     dimensions: string[],
     metrics: string[],
     full: boolean,
+    offset = 1,
 ): Record<string, unknown> {
     const rows = resp.data.map(row => ({
         dimensions: mapDimensions(dimensions, row.dimensions, full),
@@ -124,6 +160,7 @@ export function formatDataResponse(
             meta: buildMeta(resp, rows.length),
         },
         resp,
+        offset,
     )
 }
 
@@ -133,6 +170,7 @@ export function formatComparisonResponse(
     dimensions: string[],
     metrics: string[],
     full: boolean,
+    offset = 1,
 ): Record<string, unknown> {
     const mapCompared = (m: { a: (number | null)[]; b: (number | null)[] }) =>
         Object.fromEntries(
@@ -147,9 +185,13 @@ export function formatComparisonResponse(
         {
             rows,
             totals: resp.totals ? mapCompared(resp.totals) : null,
+            delta_convention:
+                'delta = b - a; delta_pct = (b - a) / a * 100. Segment A is the baseline. ' +
+                'With default dates A is the earlier period and B the recent one, so positive delta = growth.',
             meta: buildMeta(resp, rows.length),
         },
         resp,
+        offset,
     )
 }
 
@@ -158,6 +200,7 @@ export function formatDrilldownResponse(
     resp: DrilldownResponse,
     metrics: string[],
     full: boolean,
+    offset = 1,
 ): Record<string, unknown> {
     const rows = resp.data.map(row => ({
         dimension: full ? row.dimension : (row.dimension.name ?? null),
@@ -173,6 +216,7 @@ export function formatDrilldownResponse(
             hint: 'To expand a row where expandable=true, call run_drilldown again with parentId set to the path of dimension ids/names down to that row.',
         },
         resp,
+        offset,
     )
 }
 
@@ -189,10 +233,92 @@ function mapMetricSeries(
 }
 
 /**
+ * Snap a UTC date back to the START of its Metrica bucket for `group`. Confirmed
+ * against the live API: /bytime buckets to calendar periods — Monday-start ISO
+ * weeks, and first-of-period for month/quarter/year — so a mid-period date1 must
+ * be aligned before labelling, otherwise every value is tied to the wrong date.
+ */
+function bucketStart(date: Date, group: string): Date {
+    const d = new Date(date)
+    d.setUTCHours(0, 0, 0, 0)
+    switch (group) {
+        case 'week': {
+            const mondayOffset = (d.getUTCDay() + 6) % 7 // 0 = Monday
+            d.setUTCDate(d.getUTCDate() - mondayOffset)
+            break
+        }
+        case 'month':
+            d.setUTCDate(1)
+            break
+        case 'quarter':
+            d.setUTCMonth(d.getUTCMonth() - (d.getUTCMonth() % 3), 1)
+            break
+        case 'year':
+            d.setUTCMonth(0, 1)
+            break
+        // day: already a day boundary, nothing to snap.
+    }
+    return d
+}
+
+/** Step a bucket-aligned UTC date forward by `n` whole intervals of `group`. */
+function stepDate(start: Date, group: string, n: number): Date {
+    const d = new Date(start)
+    switch (group) {
+        case 'week':
+            d.setUTCDate(d.getUTCDate() + 7 * n)
+            break
+        case 'month':
+            // `start` is the 1st, so adding months never overflows a short month.
+            d.setUTCMonth(d.getUTCMonth() + n)
+            break
+        case 'quarter':
+            d.setUTCMonth(d.getUTCMonth() + 3 * n)
+            break
+        case 'year':
+            d.setUTCFullYear(d.getUTCFullYear() + n)
+            break
+        default: // day
+            d.setUTCDate(d.getUTCDate() + n)
+            break
+    }
+    return d
+}
+
+/**
+ * Build the per-interval date axis, labelling each value with the START of its
+ * Metrica bucket. The anchor is snapped to the bucket boundary and months are
+ * stepped from the 1st, so a mid-period date1 (e.g. a Wednesday for `week`, or
+ * Jan 31 for `month`) is labelled correctly with no short-month overflow.
+ * Returns null when the axis cannot be labelled reliably:
+ *   - `all`/`auto`: no fixed interval length;
+ *   - `hour`: bucket boundaries follow the counter timezone, unknown here, so
+ *     UTC labels would be off by the offset — better to omit than mislead;
+ *   - a missing/relative/unparseable date1.
+ */
+function buildDateAxis(
+    date1: string | null,
+    group: string,
+    count: number,
+): string[] | null {
+    if (!date1 || group === 'all' || group === 'auto' || group === 'hour') {
+        return null
+    }
+    const parsed = new Date(`${date1}T00:00:00Z`)
+    if (Number.isNaN(parsed.getTime())) return null
+    const anchor = bucketStart(parsed, group)
+    return Array.from({ length: count }, (_, i) =>
+        stepDate(anchor, group, i).toISOString().slice(0, 10),
+    )
+}
+
+/**
  * Shape a `/stat/v1/data/bytime` response. Each metric becomes an array of
- * values, one per time interval from date1..date2 at the given `group`. The
- * interval timestamps are not returned by the API, so we surface `group` and
- * the resolved date range and leave axis reconstruction to the caller.
+ * values, one per time interval at the given `group`. The Metrica API does not
+ * return the interval timestamps, so we compute them server-side: `time_axis.dates[i]`
+ * is the date for index `i` of every metric series (same length), removing the
+ * off-by-one hazard of client-side reconstruction. `dates` is null only when the
+ * axis is not derivable (group all/auto, or a relative/missing date1).
  */
 export function formatBytimeResponse(
     resp: BytimeResponse,
@@ -206,15 +332,31 @@ export function formatBytimeResponse(
         metrics: mapMetricSeries(metrics, row.metrics),
     }))
     const q = resp.query as Record<string, unknown> | undefined
+    const date1 = (q?.date1 as string) ?? null
+    const date2 = (q?.date2 as string) ?? null
+    // Derive interval count from the returned series, NOT date1/date2 — that
+    // keeps it correct for group 'all'/'auto' where the count is not derivable
+    // from the date range alone.
+    const intervalCount = Math.max(
+        0,
+        ...resp.data.flatMap(r => r.metrics.map(s => s.length)),
+        ...(resp.totals ?? []).map(s => s.length),
+    )
+    const dates = buildDateAxis(date1, group, intervalCount)
     return withNotice(
         {
             rows,
             totals: resp.totals ? mapMetricSeries(metrics, resp.totals) : null,
             time_axis: {
                 group,
-                date1: (q?.date1 as string) ?? null,
-                date2: (q?.date2 as string) ?? null,
-                note: 'Each metric is an array of values, one per interval from date1 to date2 at the given group.',
+                date1,
+                date2,
+                interval_count: intervalCount,
+                dates,
+                note:
+                    dates !== null
+                        ? 'time_axis.dates[i] is the START of the bucket for index i of every metric series (week=Monday, month/quarter/year=period start); a mid-period date1/date2 means the first/last bucket may be partial.'
+                        : 'Per-interval dates are not derivable here (group all/auto/hour, or a relative date1); each metric is a values array of length interval_count spanning date1..date2.',
             },
             meta: buildMeta(resp, rows.length),
         },
@@ -232,8 +374,55 @@ export function toToolResult(
     }
 }
 
+/** A short, actionable next step for the model based on the API error kind. */
+function recoveryHint(err: MetricaApiError): string | undefined {
+    if (err.status === 401 || err.errorTypes.includes('invalid_token')) {
+        return (
+            'The access token is invalid or expired. Re-authenticate by running ' +
+            '`npx -y yandex-metrica-mcp auth` (or set a fresh YANDEX_METRIKA_TOKEN).'
+        )
+    }
+    // 403/access_denied is a missing counter grant, NOT a stale token — re-auth
+    // will not help, so do not suggest it here.
+    if (err.status === 403 || err.errorTypes.includes('access_denied')) {
+        return (
+            'Access denied: the token lacks access to this counter. Grant the ' +
+            'account access to the counter, or call a counterId you can read.'
+        )
+    }
+    if (err.isThrottled) {
+        return (
+            'Rate/quota limit hit. Wait a few minutes and retry with fewer parallel ' +
+            'calls. Metrica resets its daily quota at 00:00 GMT.'
+        )
+    }
+    if (err.errorTypes.includes('timeout')) {
+        return 'The request timed out. Narrow the date range or reduce dimensions/metrics, then retry.'
+    }
+    if (err.errorTypes.includes('network_error')) {
+        return 'Network error reaching the Metrica API. Check connectivity and retry.'
+    }
+    return undefined
+}
+
 /** Wrap an error as a tool result the model can read and recover from. */
 export function errorResult(err: unknown): CallToolResult {
+    if (err instanceof MetricaApiError) {
+        const hint = recoveryHint(err)
+        const text = hint
+            ? `Error: ${err.message}\n${hint}`
+            : `Error: ${err.message}`
+        return {
+            content: [{ type: 'text', text }],
+            structuredContent: {
+                error: err.message,
+                status: err.status,
+                error_types: err.errorTypes,
+                ...(hint ? { hint } : {}),
+            },
+            isError: true,
+        }
+    }
     const message = err instanceof Error ? err.message : String(err)
     return {
         content: [{ type: 'text', text: `Error: ${message}` }],

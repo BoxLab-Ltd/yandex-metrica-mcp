@@ -45,6 +45,7 @@ export function registerRunReport(server: McpServer, ctx: ToolContext): void {
                         dimensions,
                         args.metrics,
                         args.fullResponse ?? false,
+                        args.offset ?? 1,
                     ),
                 )
             } catch (err) {

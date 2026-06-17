@@ -41,4 +41,14 @@ describe('errorFromResponse', () => {
         expect(new MetricaApiError(504, 'x').isRetryable).toBe(true)
         expect(new MetricaApiError(404, 'x').isRetryable).toBe(false)
     })
+
+    it('treats client-side timeout/network errors (status 0) as retryable', () => {
+        const timeout = new MetricaApiError(0, 'timed out', ['timeout'])
+        const network = new MetricaApiError(0, 'network', ['network_error'])
+        expect(timeout.isTransientLocalError).toBe(true)
+        expect(timeout.isRetryable).toBe(true)
+        expect(network.isRetryable).toBe(true)
+        // A real status code with no transient marker stays non-retryable.
+        expect(new MetricaApiError(400, 'bad').isTransientLocalError).toBe(false)
+    })
 })
