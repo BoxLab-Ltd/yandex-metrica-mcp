@@ -1,10 +1,11 @@
 name: Release
 
-# Publishes to npm with provenance when a GitHub Release is published.
-# Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret. Configure the
-# trusted publisher once on npmjs.com (package Settings) pointing at this repo
-# and workflow file. Runs on Node (not Bun) so the published artifact stays
-# Node-only; the build is plain tsc.
+# Publishes to npm AND the official MCP registry when a GitHub Release is
+# published. Both use OIDC — no secrets: npm via Trusted Publishing (configure
+# the trusted publisher once on npmjs.com pointing at this repo + workflow file),
+# the MCP registry via `mcp-publisher login github-oidc` (the io.github.BoxLab-Ltd
+# namespace is authorized by the repo owner). Runs on Node (not Bun) so the
+# published artifact stays Node-only; the build is plain tsc.
 on:
     release:
         types: [published]
@@ -22,13 +23,29 @@ jobs:
               with:
                   node-version: 22
                   registry-url: https://registry.npmjs.org
-            - name: Verify package version matches the release tag
+            - name: Verify versions match the release tag
               run: |
-                  PKG="$(node -p "require('./package.json').version")"
                   TAG="${GITHUB_REF_NAME#v}"
-                  test "$PKG" = "$TAG" || {
-                    echo "package.json version ($PKG) does not match release tag ($TAG)"; exit 1;
-                  }
+                  PKG="$(node -p "require('./package.json').version")"
+                  SRV="$(node -p "require('./server.json').version")"
+                  SRVPKG="$(node -p "require('./server.json').packages[0].version")"
+                  for entry in "package.json:$PKG" "server.json:$SRV" "server.json#packages[0]:$SRVPKG"; do
+                    name="${entry%%:*}"; ver="${entry#*:}"
+                    test "$ver" = "$TAG" || {
+                      echo "$name version ($ver) does not match release tag ($TAG)"; exit 1;
+                    }
+                  done
             - run: npm install -g npm@latest
             - run: npm install
             - run: npm publish
+
+            # Publish to the official MCP registry (registry.modelcontextprotocol.io).
+            # Runs after npm publish: the registry validates that the npm package
+            # already carries the matching mcpName.
+            - name: Install mcp-publisher
+              run: |
+                  curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+            - name: Authenticate to the MCP registry (GitHub OIDC)
+              run: ./mcp-publisher login github-oidc
+            - name: Publish to the MCP registry
+              run: ./mcp-publisher publish
