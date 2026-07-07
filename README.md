@@ -4,6 +4,9 @@
 [![npm](https://img.shields.io/npm/v/yandex-metrica-mcp.svg)](https://www.npmjs.com/package/yandex-metrica-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
+**Ask your Yandex Metrica analytics in plain language — from Claude, Cursor, or
+any MCP client.**
+
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for
 **Yandex Metrica**. It lets an AI agent query your web-analytics data — traffic,
 sources, landing pages, conversions, geography, devices and trends — through a
@@ -14,6 +17,48 @@ small set of flexible, read-only tools.
 
 > Status: early development (v0.1, work in progress). General-purpose: SEO is
 > one of many use cases, not the focus.
+
+## Demo
+
+Point an AI agent at your counter and ask about your traffic — the server queries
+Yandex Metrica and hands back real, read-only data, no dashboards. Here the
+`run_report` tool answers a “traffic sources, last 7 days” question against a live
+counter:
+
+![yandex-metrica-mcp querying live Yandex Metrica traffic sources, read-only](docs/demo.gif)
+
+## Quickstart
+
+**1. Add the server to your MCP client** (e.g. Claude Desktop) — no token
+required up front; you log in interactively in step 2:
+
+```json
+{
+    "mcpServers": {
+        "yandex-metrica": {
+            "command": "npx",
+            "args": ["-y", "yandex-metrica-mcp"],
+            "env": { "YANDEX_METRIKA_COUNTER_ID": "12345678" }
+        }
+    }
+}
+```
+
+**2. Log in once — one command, no app registration, no secret stored:**
+
+```bash
+npx yandex-metrica-mcp auth
+```
+
+Approve the Yandex consent page and paste the code back. The login uses
+authorization-code + PKCE, so **no client secret ever touches your machine**; the
+token is cached (mode 0600) and valid for ~1 year.
+
+**3. Ask your agent** about traffic, sources, conversions, geography, devices, or
+trends — see [Examples](#examples) for prompts.
+
+Prefer a static token (CI / non-interactive) or your own OAuth app? See
+[Authentication](#authentication).
 
 ## Why
 
@@ -67,28 +112,13 @@ for CI or non-interactive use.
 set `YANDEX_OAUTH_CLIENT_ID`; add `YANDEX_OAUTH_CLIENT_SECRET` to also enable
 automatic token refresh.
 
-## Usage
+## Configuration
 
-Add the server to your MCP client (e.g. Claude Desktop) configuration:
-
-```json
-{
-    "mcpServers": {
-        "yandex-metrica": {
-            "command": "npx",
-            "args": ["-y", "yandex-metrica-mcp"],
-            "env": {
-                "YANDEX_METRIKA_TOKEN": "your-oauth-token",
-                "YANDEX_METRIKA_COUNTER_ID": "12345678"
-            }
-        }
-    }
-}
-```
-
-See [`.env.example`](./.env.example) for all configuration options. The published
-package runs on Node (so `npx`/MCP clients work out of the box); local
-development uses [Bun](https://bun.sh).
+The [Quickstart](#quickstart) covers the happy path. For all options — static
+token, your own OAuth app, default counter, request tuning, language — see
+[`.env.example`](./.env.example). The published package runs on Node (so
+`npx`/MCP clients work out of the box); local development uses
+[Bun](https://bun.sh).
 
 ## Examples
 
