@@ -1,0 +1,8 @@
+{
+    "mcpServers": {
+        "yandex-metrica": {
+            "command": "npx",
+            "args": ["-y", "yandex-metrica-mcp"]
+        }
+    }
+}
