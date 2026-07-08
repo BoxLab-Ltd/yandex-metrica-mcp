@@ -4,8 +4,9 @@ name: Release
 # published. Both use OIDC — no secrets: npm via Trusted Publishing (configure
 # the trusted publisher once on npmjs.com pointing at this repo + workflow file),
 # the MCP registry via `mcp-publisher login github-oidc` (the io.github.BoxLab-Ltd
-# namespace is authorized by the repo owner). Runs on Node (not Bun) so the
-# published artifact stays Node-only; the build is plain tsc.
+# namespace is authorized by the repo owner). Install/build run via Bun from the
+# committed bun.lock (reproducible, no untrusted lifecycle scripts); publish runs
+# via Node/npm and the artifact is plain tsc output, so it stays Node-only.
 on:
     release:
         types: [published]
@@ -18,8 +19,11 @@ jobs:
     publish:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v7
-            - uses: actions/setup-node@v6
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+              with:
+                  bun-version: latest
+            - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
               with:
                   node-version: 22
                   registry-url: https://registry.npmjs.org
@@ -35,16 +39,23 @@ jobs:
                       echo "$name version ($ver) does not match release tag ($TAG)"; exit 1;
                     }
                   done
-            - run: npm install -g npm@latest
-            - run: npm install
-            - run: npm publish
+            - run: npm install -g npm@11.18.0
+            - run: bun install --frozen-lockfile
+            - run: bun run build
+            - run: npm publish --ignore-scripts
 
             # Publish to the official MCP registry (registry.modelcontextprotocol.io).
             # Runs after npm publish: the registry validates that the npm package
             # already carries the matching mcpName.
-            - name: Install mcp-publisher
+            - name: Install mcp-publisher (pinned + checksum-verified)
+              env:
+                  MCP_PUBLISHER_VERSION: v1.7.9
+                  MCP_PUBLISHER_SHA256: ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac
               run: |
-                  curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+                  curl -fsSL -o mcp-publisher.tar.gz \
+                    "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+                  echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+                  tar xzf mcp-publisher.tar.gz mcp-publisher
             - name: Authenticate to the MCP registry (GitHub OIDC)
               run: ./mcp-publisher login github-oidc
             - name: Publish to the MCP registry
