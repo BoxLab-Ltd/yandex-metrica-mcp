@@ -1,0 +1,14 @@
+{
+    "name": "boxlab",
+    "owner": {
+        "name": "BoxLab",
+        "url": "https://github.com/BoxLab-Ltd"
+    },
+    "plugins": [
+        {
+            "name": "yandex-metrica-mcp",
+            "source": "./",
+            "description": "MCP server for Yandex Metrica — query your web analytics in plain language. Secretless PKCE login, read-only, TypeScript."
+        }
+    ]
+}
