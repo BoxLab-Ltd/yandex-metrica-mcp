@@ -60,6 +60,18 @@ trends — see [Examples](#examples) for prompts.
 Prefer a static token (CI / non-interactive) or your own OAuth app? See
 [Authentication](#authentication).
 
+### Or install as a Claude Code plugin
+
+The repo doubles as a plugin marketplace, so you can install the server through
+Claude Code's plugin system instead of the config above:
+
+```bash
+/plugin marketplace add BoxLab-Ltd/yandex-metrica-mcp
+/plugin install yandex-metrica-mcp@boxlab
+```
+
+Then run `npx yandex-metrica-mcp auth` once to log in.
+
 ## Why
 
 There is no official Yandex Metrica MCP server, and existing community ones are
