@@ -13,6 +13,7 @@ interface SamplingMeta {
     total_rows?: number
     total_rows_rounded?: boolean
     sampled?: boolean
+    contains_sensitive_data?: boolean
     sample_share?: number
     sample_size?: number
     sample_space?: number
@@ -29,6 +30,7 @@ function buildMeta(
         returned_rows: returnedRows,
         sampled: resp.sampled ?? false,
         sample_share: resp.sample_share ?? null,
+        contains_sensitive_data: resp.contains_sensitive_data ?? false,
         data_lag_seconds: resp.data_lag ?? null,
     }
 }

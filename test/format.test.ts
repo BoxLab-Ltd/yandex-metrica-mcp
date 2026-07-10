@@ -104,6 +104,17 @@ describe('formatDataResponse', () => {
         expect(out.sampling_notice).toContain('sample')
         expect((out.meta as Record<string, unknown>).sampled).toBe(true)
     })
+
+    it('surfaces contains_sensitive_data in metadata', () => {
+        const limited = {
+            ...resp,
+            contains_sensitive_data: true,
+        } as unknown as DataResponse
+        const out = formatDataResponse(limited, [], ['ym:s:visits'], false)
+        expect(
+            (out.meta as Record<string, unknown>).contains_sensitive_data,
+        ).toBe(true)
+    })
 })
 
 describe('formatComparisonResponse', () => {
