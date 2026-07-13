@@ -27,7 +27,11 @@ jobs:
               with:
                   node-version: 22
                   registry-url: https://registry.npmjs.org
-            - name: Verify versions match the release tag
+            # Everything the registry can reject is checked HERE, before the
+            # irreversible npm publish — otherwise npm goes out, the registry
+            # step fails, and the release cannot be re-run (npm refuses to
+            # republish a version). See the MCP Registry workflow for recovery.
+            - name: Verify the release manifests
               run: |
                   TAG="${GITHUB_REF_NAME#v}"
                   PKG="$(node -p "require('./package.json').version")"
@@ -39,10 +43,21 @@ jobs:
                       echo "$name version ($ver) does not match release tag ($TAG)"; exit 1;
                     }
                   done
+                  DESC="$(node -p "require('./server.json').description")"
+                  test "${#DESC}" -le 100 || {
+                    echo "server.json description is ${#DESC} chars; the MCP registry allows at most 100"; exit 1;
+                  }
             - run: npm install -g npm@11.18.0
             - run: bun install --frozen-lockfile
             - run: bun run build
-            - run: npm publish --ignore-scripts
+            - name: Publish to npm (skip when the version is already there)
+              run: |
+                  VERSION="$(node -p "require('./package.json').version")"
+                  if npm view "yandex-metrica-mcp@${VERSION}" version >/dev/null 2>&1; then
+                    echo "yandex-metrica-mcp@${VERSION} is already published — skipping"
+                  else
+                    npm publish --ignore-scripts
+                  fi
 
             # Publish to the official MCP registry (registry.modelcontextprotocol.io).
             # Runs after npm publish: the registry validates that the npm package
