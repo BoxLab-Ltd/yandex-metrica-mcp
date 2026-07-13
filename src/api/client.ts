@@ -82,10 +82,23 @@ function buildQuery(params: QueryParams): URLSearchParams {
     return sp
 }
 
+type HttpMethod = 'GET' | 'POST'
+
+interface FetchOptions {
+    method: HttpMethod
+    accept: string
+}
+
+export interface RequestOptions {
+    method?: HttpMethod
+    params?: QueryParams
+}
+
 /**
  * Framework-agnostic HTTP client for the Yandex Metrica API. Knows nothing
- * about MCP. Handles auth, concurrency, timeouts, and retry/backoff; returns
- * parsed JSON for callers to validate with their own schema.
+ * about MCP. Handles auth, concurrency, timeouts, and retry/backoff. Returns
+ * parsed JSON (`request`/`requestJson`) or streams raw text lines
+ * (`streamLines`, for the Logs API) so callers validate/parse shape themselves.
  */
 export class MetricaClient {
     private readonly semaphore: Semaphore
@@ -109,21 +122,143 @@ export class MetricaClient {
 
     /** GET `path` with `params`, returning parsed JSON (caller validates shape). */
     async request(path: string, params: QueryParams = {}): Promise<unknown> {
-        const finalParams: QueryParams = { ...params }
-        if (finalParams.lang === undefined && this.options.lang) {
-            finalParams.lang = this.options.lang
-        }
-        const url = `${this.options.baseUrl}${path}?${buildQuery(finalParams).toString()}`
+        return this.requestJson(path, { params })
+    }
 
+    /**
+     * Request `path` (GET or POST) returning parsed JSON. POST sends its params
+     * as the query string with an empty body — the shape the Metrica management
+     * endpoints (including Logs API create/clean/cancel) expect.
+     */
+    async requestJson(
+        path: string,
+        opts: RequestOptions = {},
+    ): Promise<unknown> {
+        const { status, text } = await this.send(
+            path,
+            this.withLang(opts.params ?? {}),
+            { method: opts.method ?? 'GET', accept: 'application/json' },
+        )
+        return this.parseJson(status, text)
+    }
+
+    /**
+     * Stream a raw text body (Logs API download) line by line, holding one
+     * concurrency slot for the whole transfer. Yields lines WITHOUT their
+     * trailing newline; the caller decides when to stop (a sample) or drain to a
+     * file. Breaking out of the iterator aborts the transfer and frees the slot.
+     * The inactivity timeout is re-armed on each chunk, so a long-but-flowing
+     * download is not killed while a truly stalled one still is.
+     */
+    async *streamLines(
+        path: string,
+        params: QueryParams = {},
+    ): AsyncGenerator<string> {
+        const url = `${this.options.baseUrl}${path}?${buildQuery(params).toString()}`
+        const release = await this.semaphore.acquire()
+        const controller = new AbortController()
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const arm = () => {
+            if (timer) clearTimeout(timer)
+            timer = setTimeout(
+                () => controller.abort(),
+                this.options.requestTimeoutMs,
+            )
+        }
+        try {
+            const token = await this.options.getToken()
+            arm()
+            const res = await this.fetchImpl(url, {
+                method: 'GET',
+                headers: {
+                    Authorization: `OAuth ${token}`,
+                    'User-Agent': this.options.userAgent,
+                    Accept: 'text/tab-separated-values, text/plain, */*',
+                },
+                signal: controller.signal,
+            })
+            if (!res.ok) {
+                throw errorFromResponse(res.status, await res.text())
+            }
+            if (!res.body) {
+                for (const line of (await res.text()).split('\n')) yield line
+                return
+            }
+            const decoder = new TextDecoder()
+            let buf = ''
+            for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
+                arm()
+                buf += decoder.decode(chunk, { stream: true })
+                let nl = buf.indexOf('\n')
+                while (nl >= 0) {
+                    yield buf.slice(0, nl)
+                    buf = buf.slice(nl + 1)
+                    nl = buf.indexOf('\n')
+                }
+            }
+            buf += decoder.decode(new Uint8Array())
+            if (buf.length > 0) yield buf
+        } catch (err) {
+            if (err instanceof MetricaApiError) throw err
+            if (err instanceof Error && err.name === 'AbortError') {
+                throw new MetricaApiError(
+                    0,
+                    `Log download timed out after ${this.options.requestTimeoutMs}ms of inactivity`,
+                    ['timeout'],
+                )
+            }
+            const detail = err instanceof Error ? err.message : String(err)
+            throw new MetricaApiError(
+                0,
+                `Network error during log download: ${detail}`,
+                ['network_error'],
+            )
+        } finally {
+            if (timer) clearTimeout(timer)
+            controller.abort()
+            release()
+        }
+    }
+
+    private withLang(params: QueryParams): QueryParams {
+        if (params.lang === undefined && this.options.lang) {
+            return { ...params, lang: this.options.lang }
+        }
+        return params
+    }
+
+    private parseJson(status: number, text: string): unknown {
+        // An empty 2xx body (e.g. a 202 Accepted dedup on Logs API create) is
+        // "no content", not malformed — surface it as null for callers to handle.
+        if (text.trim() === '') return null
+        try {
+            return JSON.parse(text) as unknown
+        } catch {
+            throw new MetricaApiError(
+                status,
+                'Metrica API returned a non-JSON response',
+            )
+        }
+    }
+
+    private async send(
+        path: string,
+        params: QueryParams,
+        opts: FetchOptions,
+    ): Promise<{ status: number; text: string }> {
+        const url = `${this.options.baseUrl}${path}?${buildQuery(params).toString()}`
         const release = await this.semaphore.acquire()
         try {
-            return await this.withRetry(url)
+            return await this.withRetry(url, opts)
         } finally {
             release()
         }
     }
 
-    private async withRetry(url: string): Promise<unknown> {
+    private async withRetry(
+        url: string,
+        opts: FetchOptions,
+    ): Promise<{ status: number; text: string }> {
         let attempt = 0
         let authRetried = false
         // Records the token doFetch actually sent, so a reactive refresh can
@@ -131,7 +266,7 @@ export class MetricaClient {
         const sent = { token: '' }
         for (;;) {
             try {
-                return await this.doFetch(url, sent)
+                return await this.doFetch(url, sent, opts)
             } catch (err) {
                 // Reactive auth refresh: on a 401/invalid_token, refresh once
                 // and retry immediately before falling back to normal backoff.
@@ -174,7 +309,8 @@ export class MetricaClient {
     private async doFetch(
         url: string,
         sent: { token: string },
-    ): Promise<unknown> {
+        opts: FetchOptions,
+    ): Promise<{ status: number; text: string }> {
         const token = await this.options.getToken()
         sent.token = token
         const controller = new AbortController()
@@ -187,11 +323,11 @@ export class MetricaClient {
         let text: string
         try {
             res = await this.fetchImpl(url, {
-                method: 'GET',
+                method: opts.method,
                 headers: {
                     Authorization: `OAuth ${token}`,
                     'User-Agent': this.options.userAgent,
-                    Accept: 'application/json',
+                    Accept: opts.accept,
                 },
                 signal: controller.signal,
             })
@@ -222,13 +358,6 @@ export class MetricaClient {
         if (!res.ok) {
             throw errorFromResponse(res.status, text)
         }
-        try {
-            return JSON.parse(text) as unknown
-        } catch {
-            throw new MetricaApiError(
-                res.status,
-                'Metrica API returned a non-JSON response',
-            )
-        }
+        return { status: res.status, text }
     }
 }

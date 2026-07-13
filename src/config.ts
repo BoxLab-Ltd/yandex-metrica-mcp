@@ -1,4 +1,6 @@
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { z } from 'zod'
 
 const require = createRequire(import.meta.url)
@@ -45,6 +47,8 @@ export interface Config {
     readonly requestTimeoutMs: number
     /** Default row limit applied to report tools when the caller omits one. */
     readonly defaultRowLimit: number
+    /** Directory where `logs_download` writes full exports in file mode. */
+    readonly logsOutputDir: string
     /** Value sent in the `User-Agent` header. */
     readonly userAgent: string
 }
@@ -57,6 +61,7 @@ const EnvSchema = z.object({
     YANDEX_METRIKA_COUNTER_ID: z.coerce.number().int().positive().optional(),
     YANDEX_METRIKA_LANG: z.string().min(2).max(5).default('en'),
     YANDEX_METRIKA_BASE_URL: z.url().default('https://api-metrika.yandex.net'),
+    YANDEX_METRIKA_LOGS_DIR: z.string().min(1).optional(),
 })
 
 /** Internal, non-env-tunable defaults that callers rarely need to change. */
@@ -91,6 +96,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         maxConcurrency: MAX_CONCURRENCY,
         requestTimeoutMs: REQUEST_TIMEOUT_MS,
         defaultRowLimit: DEFAULT_ROW_LIMIT,
+        logsOutputDir:
+            e.YANDEX_METRIKA_LOGS_DIR ??
+            join(tmpdir(), 'yandex-metrica-mcp-logs'),
         userAgent: `${SERVER_NAME}/${SERVER_VERSION}`,
     }
 }

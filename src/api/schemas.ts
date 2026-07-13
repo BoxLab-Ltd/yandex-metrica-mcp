@@ -142,3 +142,63 @@ export type Goal = z.infer<typeof GoalSchema>
 export const GoalsResponseSchema = z.object({
     goals: z.array(GoalSchema),
 })
+
+/**
+ * Logs API request lifecycle statuses. Kept as a plain string in the schema
+ * (lenient, tolerates drift); these constants drive the ready/terminal logic.
+ */
+export const LOG_STATUS_PROCESSED = 'processed'
+export const LOG_IN_PROGRESS_STATUSES = ['created', 'awaiting_retry'] as const
+export const LOG_TERMINAL_STATUSES = [
+    'processing_failed',
+    'canceled',
+    'cleaned_by_user',
+    'cleaned_automatically_as_too_old',
+] as const
+
+/** One downloadable portion of a prepared log. */
+export const LogPartSchema = z
+    .object({
+        part_number: z.number(),
+        size: z.number().optional(),
+    })
+    .catchall(z.unknown())
+export type LogPart = z.infer<typeof LogPartSchema>
+
+/** A Logs API request object (returned by create/get/list/clean/cancel). */
+export const LogRequestSchema = z
+    .object({
+        request_id: z.number(),
+        counter_id: z.number().optional(),
+        source: z.string().optional(),
+        date1: z.string().optional(),
+        date2: z.string().optional(),
+        fields: z.array(z.string()).optional(),
+        status: z.string(),
+        size: z.number().optional(),
+        parts: z.array(LogPartSchema).optional(),
+        attribution: z.string().optional(),
+    })
+    .catchall(z.unknown())
+export type LogRequest = z.infer<typeof LogRequestSchema>
+
+export const LogRequestWrapperSchema = z.object({
+    log_request: LogRequestSchema,
+})
+
+export const LogRequestsListSchema = z.object({
+    requests: z.array(LogRequestSchema).default([]),
+})
+
+/** Result of the `evaluate` feasibility check. */
+export const LogRequestEvaluationSchema = z
+    .object({
+        possible: z.boolean(),
+        max_possible_day_quantity: z.number().optional(),
+    })
+    .catchall(z.unknown())
+export type LogRequestEvaluation = z.infer<typeof LogRequestEvaluationSchema>
+
+export const LogRequestEvaluationWrapperSchema = z.object({
+    log_request_evaluation: LogRequestEvaluationSchema,
+})

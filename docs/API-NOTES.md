@@ -83,6 +83,39 @@ live counters/goals (Management API).
 - Per-goal metrics: `ym:s:goal<id>reaches|visits|users|conversionRate`.
 - Attribution placeholder `<attribution>` defaults to `lastsign`.
 
+## Logs API (raw row-level export)
+
+Async, under the **management** namespace. Paths
+`/management/v1/counter/{id}/...`; collection = `logrequests` (plural), one
+request = `logrequest/{requestId}` (singular).
+
+- **Lifecycle:** `evaluate` (feasibility) → `create` (POST) → poll `get` until
+  `status=processed` → `download` each part → `clean`. Plus `cancel` (abort a
+  running one) and list (`GET logrequests`).
+- **create params — query string, NOT a JSON body:** `date1`/`date2`
+  (`YYYY-MM-DD`, concrete; **date2 must be earlier than today**), `source` =
+  `visits`|`hits`, `fields` (CSV, ≤ **3000 chars**, prefix must match source:
+  `ym:s:` for visits / `ym:pv:` for hits), optional `attribution` (UPPERCASE:
+  `FIRST|LAST|LASTSIGN|...`).
+- **Statuses:** `created`, `awaiting_retry` (in progress); `processed` (ready);
+  `processing_failed`, `canceled`, `cleaned_by_user`,
+  `cleaned_automatically_as_too_old` (terminal). A processed request's `parts[]`
+  gives the part count; download `part/{0..n-1}/download`.
+- **Download = TSV** (ClickHouse `TabSeparatedWithNames`): **every part** carries
+  a header row — keep it once when concatenating. Values escape tab/newline/`\`,
+  so split rows on raw `\n`, fields on raw `\t`, then unescape (`src/api/tsv.ts`).
+- **Limits:** range ≤ 1 year/request; **~10 GB** prepared-log quota per counter
+  (sum `size` of non-terminal requests) — prepared logs count until `clean`ed;
+  10 req/s; requests processed sequentially; an **identical in-flight request →
+  HTTP 202** (dedup, empty body — `createLogRequest` then locates it via the list).
+- **No sampling** (rows are raw). Scope `metrika:read` suffices even for personal
+  fields (IP, clientID, URL); we flag them (`isPersonalLogField`) and set
+  `contains_personal_data` in the output rather than blocking them.
+- **Client/MCP shaping:** the base client is GET+JSON; Logs adds `requestJson`
+  (POST) and `streamLines` (raw TSV, line-streamed with an inactivity timeout).
+  `logs_download` returns a bounded inline sample by default, or streams the full
+  export to a file (`YANDEX_METRIKA_LOGS_DIR`) — raw content never enters context.
+
 ## Flagged ambiguities (do not hard-code blindly)
 
 1. Throttle status 420 vs 429 — handle both.

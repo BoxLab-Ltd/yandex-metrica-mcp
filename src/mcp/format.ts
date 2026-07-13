@@ -1,11 +1,19 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { MetricaApiError } from '../api/errors.js'
+import {
+    isProcessed,
+    isTerminal,
+    LOG_QUOTA_BYTES,
+    type LogFileResult,
+    type LogSample,
+} from '../api/logs.js'
 import type {
     BytimeResponse,
     ComparisonResponse,
     DataResponse,
     DimensionObject,
     DrilldownResponse,
+    LogRequest,
 } from '../api/schemas.js'
 
 /** The subset of response meta we surface back to the model. */
@@ -364,6 +372,113 @@ export function formatBytimeResponse(
         },
         resp,
     )
+}
+
+/** A short, actionable next step for the model given a log request's status. */
+function logNextStep(req: LogRequest): string {
+    const id = req.request_id
+    if (isProcessed(req.status)) {
+        const parts = req.parts?.length ?? 0
+        return (
+            `Ready. Call logs_download with request_id=${id} (a bounded sample by default, or mode:"file" ` +
+            `for the full ${parts}-part export), then logs_clean to free quota.`
+        )
+    }
+    switch (req.status) {
+        case 'created':
+        case 'awaiting_retry':
+            return `Preparing. Poll logs_status with request_id=${id} every ~30-60s; it is usually ready within minutes.`
+        case 'processing_failed':
+            return 'Preparation failed. Recreate the request with a smaller date range or fewer fields.'
+        case 'canceled':
+            return 'Canceled. Create a new request if you still need this data.'
+        case 'cleaned_by_user':
+        case 'cleaned_automatically_as_too_old':
+            return 'The prepared data was cleaned and is no longer downloadable. Recreate the request to fetch it again.'
+        default:
+            return `Poll logs_status with request_id=${id} for updates.`
+    }
+}
+
+/** Shape one Logs API request object for the model. */
+export function formatLogRequest(req: LogRequest): Record<string, unknown> {
+    return {
+        request_id: req.request_id,
+        status: req.status,
+        ready: isProcessed(req.status),
+        terminal: isTerminal(req.status),
+        source: req.source ?? null,
+        date1: req.date1 ?? null,
+        date2: req.date2 ?? null,
+        fields: req.fields ?? [],
+        size_bytes: req.size ?? null,
+        parts: req.parts?.length ?? 0,
+        attribution: req.attribution ?? null,
+        next: logNextStep(req),
+    }
+}
+
+/** Shape a list of log requests plus current quota usage. */
+export function formatLogRequestList(
+    reqs: LogRequest[],
+): Record<string, unknown> {
+    const usedBytes = reqs
+        .filter(r => !isTerminal(r.status))
+        .reduce((sum, r) => sum + (r.size ?? 0), 0)
+    return {
+        requests: reqs.map(r => ({
+            request_id: r.request_id,
+            status: r.status,
+            ready: isProcessed(r.status),
+            source: r.source ?? null,
+            date1: r.date1 ?? null,
+            date2: r.date2 ?? null,
+            size_bytes: r.size ?? null,
+            parts: r.parts?.length ?? 0,
+        })),
+        quota: {
+            used_bytes: usedBytes,
+            limit_bytes: LOG_QUOTA_BYTES,
+            used_pct: round2((usedBytes / LOG_QUOTA_BYTES) * 100),
+        },
+        note: 'Prepared logs count against the ~10 GB per-counter quota until cleaned. Call logs_clean on finished requests you no longer need.',
+    }
+}
+
+/** Shape an inline log sample (part 0, bounded). */
+export function formatLogSample(
+    sample: LogSample,
+    containsPersonalData: boolean,
+): Record<string, unknown> {
+    return {
+        mode: 'sample',
+        fields: sample.header,
+        row_count: sample.rows.length,
+        rows: sample.rows,
+        truncated: sample.truncated,
+        contains_personal_data: containsPersonalData,
+        note:
+            'Bounded sample from part 0. For the complete export call logs_download with mode:"file"' +
+            (sample.truncated ? ' — more rows exist beyond this sample.' : '.'),
+    }
+}
+
+/** Shape a completed file export (path + preview, never the full content). */
+export function formatLogDownload(
+    result: LogFileResult,
+    containsPersonalData: boolean,
+): Record<string, unknown> {
+    return {
+        mode: 'file',
+        file_path: result.filePath,
+        fields: result.header,
+        rows_written: result.rowsWritten,
+        bytes_written: result.bytesWritten,
+        parts: result.parts,
+        preview: result.preview,
+        contains_personal_data: containsPersonalData,
+        note: `Full export written to ${result.filePath}. Work with the file directly — it is NOT loaded into context. Call logs_clean with request_id when done to free the counter's quota.`,
+    }
 }
 
 /** Wrap a structured object as a successful tool result (text + structured). */

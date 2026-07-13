@@ -296,3 +296,142 @@ export const GOAL_METRIC_TEMPLATES: { id: string; title: string }[] = [
     { id: 'ym:s:goal<goalId>users', title: 'Users who converted' },
     { id: 'ym:s:goal<goalId>conversionRate', title: 'Conversion rate (%)' },
 ]
+
+/** A Logs API field. `personal` marks fields that carry visitor personal data. */
+export interface LogFieldEntry {
+    id: string
+    title: string
+    source: 'visits' | 'hits'
+    personal?: boolean
+}
+
+/**
+ * Curated subset of common Logs API fields (the full lists live at
+ * yandex.com/dev/metrika/en/logs/fields/visits and /hits and evolve over time).
+ * Surfaced by `get_metadata` so the model exports real field ids per source.
+ */
+export const LOGS_FIELDS: LogFieldEntry[] = [
+    // Sessions (source=visits, ym:s:)
+    { id: 'ym:s:visitID', title: 'Visit (session) id', source: 'visits' },
+    { id: 'ym:s:counterID', title: 'Counter id', source: 'visits' },
+    { id: 'ym:s:date', title: 'Visit date', source: 'visits' },
+    {
+        id: 'ym:s:dateTime',
+        title: 'Visit start date-time',
+        source: 'visits',
+    },
+    {
+        id: 'ym:s:clientID',
+        title: 'Anonymous visitor id',
+        source: 'visits',
+        personal: true,
+    },
+    {
+        id: 'ym:s:ipAddress',
+        title: 'IP address',
+        source: 'visits',
+        personal: true,
+    },
+    {
+        id: 'ym:s:isNewUser',
+        title: 'New (1) vs returning (0) user',
+        source: 'visits',
+    },
+    {
+        id: 'ym:s:startURL',
+        title: 'Landing page URL',
+        source: 'visits',
+        personal: true,
+    },
+    {
+        id: 'ym:s:endURL',
+        title: 'Exit page URL',
+        source: 'visits',
+        personal: true,
+    },
+    {
+        id: 'ym:s:referer',
+        title: 'Referrer URL',
+        source: 'visits',
+        personal: true,
+    },
+    { id: 'ym:s:pageViews', title: 'Pageviews in the visit', source: 'visits' },
+    {
+        id: 'ym:s:visitDuration',
+        title: 'Visit duration (seconds)',
+        source: 'visits',
+    },
+    { id: 'ym:s:bounce', title: 'Bounce (1/0)', source: 'visits' },
+    { id: 'ym:s:goalsID', title: 'Ids of goals reached', source: 'visits' },
+    { id: 'ym:s:regionCountry', title: 'Country', source: 'visits' },
+    { id: 'ym:s:regionCity', title: 'City', source: 'visits' },
+    {
+        id: 'ym:s:deviceCategory',
+        title: 'Device type (1 desktop/2 phone/3 tablet/4 TV)',
+        source: 'visits',
+    },
+    { id: 'ym:s:operatingSystem', title: 'Operating system', source: 'visits' },
+    { id: 'ym:s:browser', title: 'Browser', source: 'visits' },
+    // Hits (source=hits, ym:pv:)
+    { id: 'ym:pv:watchID', title: 'Hit (event) id', source: 'hits' },
+    { id: 'ym:pv:counterID', title: 'Counter id', source: 'hits' },
+    { id: 'ym:pv:date', title: 'Hit date', source: 'hits' },
+    { id: 'ym:pv:dateTime', title: 'Hit date-time', source: 'hits' },
+    { id: 'ym:pv:title', title: 'Page title', source: 'hits' },
+    {
+        id: 'ym:pv:URL',
+        title: 'Page URL',
+        source: 'hits',
+        personal: true,
+    },
+    {
+        id: 'ym:pv:referer',
+        title: 'Referrer URL',
+        source: 'hits',
+        personal: true,
+    },
+    {
+        id: 'ym:pv:clientID',
+        title: 'Anonymous visitor id',
+        source: 'hits',
+        personal: true,
+    },
+    {
+        id: 'ym:pv:ipAddress',
+        title: 'IP address',
+        source: 'hits',
+        personal: true,
+    },
+    { id: 'ym:pv:UTMSource', title: 'UTM source', source: 'hits' },
+    { id: 'ym:pv:UTMMedium', title: 'UTM medium', source: 'hits' },
+    { id: 'ym:pv:UTMCampaign', title: 'UTM campaign', source: 'hits' },
+    { id: 'ym:pv:regionCountry', title: 'Country', source: 'hits' },
+    { id: 'ym:pv:regionCity', title: 'City', source: 'hits' },
+    {
+        id: 'ym:pv:deviceCategory',
+        title: 'Device type (1 desktop/2 phone/3 tablet/4 TV)',
+        source: 'hits',
+    },
+    { id: 'ym:pv:operatingSystem', title: 'Operating system', source: 'hits' },
+    { id: 'ym:pv:browser', title: 'Browser', source: 'hits' },
+]
+
+const PERSONAL_LOG_FIELD_IDS = new Set(
+    LOGS_FIELDS.filter(f => f.personal).map(f => f.id),
+)
+
+/** Personal-data field substrings, so fields outside the subset are still flagged. */
+const PERSONAL_LOG_SUBSTRINGS = [
+    'ipaddress',
+    'clientid',
+    'counteruseridhash',
+    'referer',
+    'url',
+]
+
+/** Whether a Logs API field carries visitor personal data (id or known suffix). */
+export function isPersonalLogField(id: string): boolean {
+    if (PERSONAL_LOG_FIELD_IDS.has(id)) return true
+    const lower = id.toLowerCase()
+    return PERSONAL_LOG_SUBSTRINGS.some(s => lower.includes(s))
+}

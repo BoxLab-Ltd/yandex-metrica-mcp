@@ -86,12 +86,17 @@ flexible report tools, strict token/context discipline, read-only by default.
 - `run_drilldown` — drill down through a dimension tree.
 - `run_timeseries` — metrics split into a time series (`/bytime`) for trends.
 - `get_metadata` — discover available counters, goals, and common
-  dimensions/metrics so the model queries with real field names.
+  dimensions/metrics (and Logs API fields) so the model queries with real names.
+- `logs_request` / `logs_status` / `logs_download` / `logs_clean` — Logs API:
+  export raw, un-sampled session (`visits`) or hit (`hits`) rows. Async lifecycle
+  (request → poll → download → clean); `logs_download` returns a bounded sample
+  inline by default, or streams the full export to a file — never dumping raw
+  rows into the model's context.
 - Built-in context control: field selection on by default, low default row
   limits, and sampling/quota surfaced back to the model.
 
-Planned for later: Logs API (raw row-level export → local SQL), Streamable HTTP
-transport, write tools (behind an explicit flag).
+Planned for later: Streamable HTTP transport, write tools (behind an explicit
+flag).
 
 ## Requirements
 
@@ -144,6 +149,9 @@ Once connected, an agent can answer questions like:
 - “Which operating systems do my visitors use? Let me drill into Windows
   versions.” → `run_drilldown`, then again with `parentId`.
 - “What counters and goals can I query?” → `get_metadata`.
+- “Export last month's raw sessions with landing pages and referrers for offline
+  analysis.” → `logs_request` (`source: "visits"`), poll `logs_status`, then
+  `logs_download` (`mode: "file"`), then `logs_clean` to free the quota.
 
 ## Development
 

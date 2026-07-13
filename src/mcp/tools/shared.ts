@@ -214,3 +214,117 @@ export const timeseriesInputShape = {
 /** Sensible default date window: the last 7 full days (ending yesterday). */
 export const DEFAULT_DATE1 = '7daysAgo'
 export const DEFAULT_DATE2 = 'yesterday'
+
+/* ---- Logs API inputs ---------------------------------------------------- */
+
+const logsSource = z
+    .enum(['visits', 'hits'])
+    .describe(
+        'Raw data source. "visits" = sessions (ym:s: fields); "hits" = page views/events (ym:pv: fields). ' +
+            'Fields must match the source.',
+    )
+
+const logsFields = z
+    .array(z.string())
+    .min(1)
+    .describe(
+        'Log field ids to export, e.g. ["ym:s:visitID","ym:s:dateTime","ym:s:startURL"]. All must share the ' +
+            "source's prefix (ym:s: for visits, ym:pv: for hits). Discover valid ids with get_metadata (logs_fields).",
+    )
+
+const logsDate = (which: string) =>
+    z
+        .string()
+        .describe(
+            `${which} as a concrete YYYY-MM-DD (relative dates are not supported for logs). ` +
+                "date2 must be earlier than today — the current day's data is not ready.",
+        )
+
+const requestId = z
+    .number()
+    .int()
+    .positive()
+    .describe('Log request id returned by logs_request.')
+
+const logsAttribution = z
+    .string()
+    .optional()
+    .describe(
+        'Attribution model for attribution-dependent fields: FIRST | LAST | LASTSIGN | ' +
+            'CROSS_DEVICE_LAST_SIGNIFICANT | AUTOMATIC | ... Default LASTSIGN.',
+    )
+
+const waitSeconds = z
+    .number()
+    .int()
+    .min(0)
+    .max(55)
+    .optional()
+    .describe(
+        'Optionally poll up to this many seconds for preparation to finish before returning (handy for small ' +
+            'exports). Default 0 = return immediately; poll with logs_status afterwards.',
+    )
+
+const downloadMode = z
+    .enum(['sample', 'file'])
+    .optional()
+    .describe(
+        'sample (default): return up to maxRows parsed rows inline — cheap, bounded, no file. ' +
+            'file: stream the FULL export to a file and return its path plus a small preview.',
+    )
+
+const maxRows = z
+    .number()
+    .int()
+    .positive()
+    .max(1000)
+    .optional()
+    .describe(
+        'sample mode only: max rows to return inline (default 100, max 1000).',
+    )
+
+const outputPath = z
+    .string()
+    .optional()
+    .describe(
+        'file mode only: absolute path to write the export to. Defaults to a file in the configured logs directory.',
+    )
+
+export const LOGS_SAMPLE_DEFAULT_ROWS = 100
+export const LOGS_PREVIEW_ROWS = 20
+
+/** Input shape for logs_request (evaluate + create). */
+export const logsRequestInputShape = {
+    counterId,
+    source: logsSource,
+    fields: logsFields,
+    date1: logsDate('Start date'),
+    date2: logsDate('End date'),
+    attribution: logsAttribution,
+    waitSeconds,
+}
+
+/** Input shape for logs_status (one request by id, or all when omitted). */
+export const logsStatusInputShape = {
+    counterId,
+    requestId: requestId
+        .optional()
+        .describe(
+            'Log request id to inspect. Omit to list all requests and current quota usage.',
+        ),
+}
+
+/** Input shape for logs_download. */
+export const logsDownloadInputShape = {
+    counterId,
+    requestId,
+    mode: downloadMode,
+    maxRows,
+    outputPath,
+}
+
+/** Input shape for logs_clean (cleans a finished request, or cancels a running one). */
+export const logsCleanInputShape = {
+    counterId,
+    requestId,
+}

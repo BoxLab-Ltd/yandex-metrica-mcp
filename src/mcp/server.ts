@@ -9,6 +9,10 @@ import {
 } from '../config.js'
 import type { ToolContext } from './context.js'
 import { registerGetMetadata } from './tools/getMetadata.js'
+import { registerLogsClean } from './tools/logsClean.js'
+import { registerLogsDownload } from './tools/logsDownload.js'
+import { registerLogsRequest } from './tools/logsRequest.js'
+import { registerLogsStatus } from './tools/logsStatus.js'
 import { registerRunComparison } from './tools/runComparison.js'
 import { registerRunDrilldown } from './tools/runDrilldown.js'
 import { registerRunReport } from './tools/runReport.js'
@@ -42,6 +46,10 @@ export function createServer(config: Config = loadConfig()): McpServer {
     registerRunComparison(server, ctx)
     registerRunDrilldown(server, ctx)
     registerRunTimeseries(server, ctx)
+    registerLogsRequest(server, ctx)
+    registerLogsStatus(server, ctx)
+    registerLogsDownload(server, ctx)
+    registerLogsClean(server, ctx)
 
     return server
 }

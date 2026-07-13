@@ -5,6 +5,7 @@ import {
     DEFAULT_ATTRIBUTION,
     DIMENSIONS,
     GOAL_METRIC_TEMPLATES,
+    LOGS_FIELDS,
     METRICS,
 } from '../../api/catalog.js'
 import { listCounters, listGoals } from '../../api/metadata.js'
@@ -18,9 +19,9 @@ export function registerGetMetadata(server: McpServer, ctx: ToolContext): void {
             title: 'Get Metrica metadata',
             description:
                 'Discovery tool. Lists the counters available to your token, a curated catalog of common ' +
-                'dimensions and metrics (Metrica has no enumeration API), attribution options, and — when a ' +
-                "counter is resolved — that counter's goals with per-goal metric templates. Call this before " +
-                'run_report to use real field names. Read-only.',
+                'dimensions and metrics (Metrica has no enumeration API), attribution options, Logs API fields, ' +
+                "and — when a counter is resolved — that counter's goals with per-goal metric templates. Call " +
+                'this before run_report or logs_request to use real field names. Read-only.',
             inputSchema: {
                 counterId: z
                     .number()
@@ -47,8 +48,23 @@ export function registerGetMetadata(server: McpServer, ctx: ToolContext): void {
                     status: c.status ?? null,
                 }))
 
+                const logField = (source: 'visits' | 'hits') =>
+                    LOGS_FIELDS.filter(f => f.source === source).map(f => ({
+                        id: f.id,
+                        title: f.title,
+                        personal: f.personal ?? false,
+                    }))
+
                 const structured: Record<string, unknown> = {
                     counters: counterSummaries,
+                    logs_fields: {
+                        visits: logField('visits'),
+                        hits: logField('hits'),
+                        note:
+                            'Fields for the Logs API (logs_request). Match ids to the source: visits→ym:s:, ' +
+                            'hits→ym:pv:; do not mix. Curated subset — full lists at ' +
+                            'yandex.com/dev/metrika/en/logs/fields. personal=true fields carry visitor personal data.',
+                    },
                     catalog: {
                         dimensions: DIMENSIONS,
                         metrics: METRICS,
