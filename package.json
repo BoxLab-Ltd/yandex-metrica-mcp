@@ -37,7 +37,7 @@
     ],
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
-        "mcpb": "bun scripts/pack-mcpb.ts",
+        "mcpb": "bash scripts/pack-mcpb.sh",
         "dev": "bun --watch src/index.ts",
         "start": "node dist/index.js",
         "auth": "bun src/index.ts auth",
