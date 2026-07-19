@@ -6,13 +6,15 @@ name: Release
 # the MCP registry via `mcp-publisher login github-oidc` (the io.github.BoxLab-Ltd
 # namespace is authorized by the repo owner). Install/build run via Bun from the
 # committed bun.lock (reproducible, no untrusted lifecycle scripts); publish runs
-# via Node/npm and the artifact is plain tsc output, so it stays Node-only.
+# via Node/npm and the artifact is plain tsc output, so it stays Node-only. A
+# Desktop Extension (.mcpb) is also bundled with Bun and attached to the Release
+# as a downloadable asset (contents: write is for that upload).
 on:
     release:
         types: [published]
 
 permissions:
-    contents: read
+    contents: write
     id-token: write
 
 jobs:
@@ -37,7 +39,8 @@ jobs:
                   PKG="$(node -p "require('./package.json').version")"
                   SRV="$(node -p "require('./server.json').version")"
                   SRVPKG="$(node -p "require('./server.json').packages[0].version")"
-                  for entry in "package.json:$PKG" "server.json:$SRV" "server.json#packages[0]:$SRVPKG"; do
+                  MFT="$(node -p "require('./manifest.json').version")"
+                  for entry in "package.json:$PKG" "server.json:$SRV" "server.json#packages[0]:$SRVPKG" "manifest.json:$MFT"; do
                     name="${entry%%:*}"; ver="${entry#*:}"
                     test "$ver" = "$TAG" || {
                       echo "$name version ($ver) does not match release tag ($TAG)"; exit 1;
@@ -50,6 +53,13 @@ jobs:
             - run: npm install -g npm@11.18.0
             - run: bun install --frozen-lockfile
             - run: bun run build
+            - name: Build and attach the Desktop Extension (.mcpb)
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  MCPB="yandex-metrica-mcp-${GITHUB_REF_NAME#v}.mcpb"
+                  bash scripts/pack-mcpb.sh "$MCPB"
+                  gh release upload "$GITHUB_REF_NAME" "$MCPB" --clobber
             - name: Publish to npm (skip when the version is already there)
               run: |
                   VERSION="$(node -p "require('./package.json').version")"
