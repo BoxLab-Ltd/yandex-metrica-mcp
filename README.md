@@ -96,6 +96,9 @@ flexible report tools, strict token/context discipline, read-only by default.
   (request → poll → download → clean); `logs_download` returns a bounded sample
   inline by default, or streams the full export to a file — never dumping raw
   rows into the model's context.
+- `login` / `submit_code` — sign in to Yandex Metrica from your MCP client, no
+  terminal needed: `login` opens the browser and captures the code over a local
+  redirect, or hands back a URL and takes the pasted code via `submit_code`.
 - Built-in context control: field selection on by default, low default row
   limits, and sampling/quota surfaced back to the model.
 
@@ -128,7 +131,10 @@ re-run `auth` when it expires. The login uses authorization-code + PKCE, so **no
 client secret is stored anywhere**. A cached login takes precedence over
 `YANDEX_METRIKA_TOKEN`.
 
-**Alternative: static token.** Get a token for an app with the `metrika:read`
+**From your MCP client (no terminal).** Not signed in yet? The server still
+starts — ask your agent to run the `login` tool and it does the same browser
+flow in-process (or returns a URL and takes the code via `submit_code`). Handy
+for GUI clients like Claude Desktop, where there is no terminal to run `auth`. Get a token for an app with the `metrika:read`
 scope at <https://oauth.yandex.ru> and pass it as `YANDEX_METRIKA_TOKEN` — handy
 for CI or non-interactive use.
 
