@@ -35,6 +35,8 @@ export interface Config {
     readonly oauthClientSecret?: string
     /** Yandex ID OAuth base URL. */
     readonly oauthBaseUrl: string
+    /** Fixed loopback port for the `auth` redirect (must match the app's registered URI). */
+    readonly oauthLoopbackPort: number
     /** Optional default counter id used when a tool call omits `counterId`. */
     readonly defaultCounterId?: number
     /** API base URL (overridable only for tests/mocks). */
@@ -58,6 +60,12 @@ const EnvSchema = z.object({
     YANDEX_OAUTH_CLIENT_ID: z.string().min(1).optional(),
     YANDEX_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
     YANDEX_OAUTH_BASE_URL: z.url().default('https://oauth.yandex.com'),
+    YANDEX_OAUTH_LOOPBACK_PORT: z.coerce
+        .number()
+        .int()
+        .min(1024)
+        .max(65535)
+        .default(53682),
     YANDEX_METRIKA_COUNTER_ID: z.coerce.number().int().positive().optional(),
     YANDEX_METRIKA_LANG: z.string().min(2).max(5).default('en'),
     YANDEX_METRIKA_BASE_URL: z.url().default('https://api-metrika.yandex.net'),
@@ -90,6 +98,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         oauthIsCustomApp: isCustomApp,
         oauthClientSecret: e.YANDEX_OAUTH_CLIENT_SECRET,
         oauthBaseUrl: e.YANDEX_OAUTH_BASE_URL,
+        oauthLoopbackPort: e.YANDEX_OAUTH_LOOPBACK_PORT,
         defaultCounterId: e.YANDEX_METRIKA_COUNTER_ID,
         baseUrl: e.YANDEX_METRIKA_BASE_URL.replace(/\/+$/, ''),
         lang: e.YANDEX_METRIKA_LANG,

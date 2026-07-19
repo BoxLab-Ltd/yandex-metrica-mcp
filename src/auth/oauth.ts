@@ -6,9 +6,12 @@
  * Design note: PKCE (authorization-code) works WITHOUT a client secret and
  * yields a ~1-year token, so the public client ships only a client_id. The
  * device grant and refresh both require the secret, so refresh is available
- * only when the user supplies their own app's client_secret. Loopback redirect
- * is impossible — Yandex rejects http:// redirects — so we use the out-of-band
- * `verification_code` redirect (the user copies the code shown after consent).
+ * only when the user supplies their own app's client_secret. Two redirect
+ * transports are supported (see auth/login.ts): a loopback redirect
+ * (`http://127.0.0.1:<port>` — the browser returns the code automatically) and
+ * the out-of-band `verification_code` redirect (fallback — the user copies the
+ * code shown after consent). Loopback needs the OAuth app to allow that
+ * redirect URI (a web-app-type client with the port registered).
  */
 
 const DEFAULT_OAUTH_BASE = 'https://oauth.yandex.com'

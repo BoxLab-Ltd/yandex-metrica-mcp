@@ -5,7 +5,7 @@ import { createServer } from './mcp/server.js'
 
 async function main(): Promise<void> {
     if (process.argv[2] === 'auth') {
-        await runAuth()
+        await runAuth(process.env, { oob: process.argv.includes('--oob') })
         return
     }
 

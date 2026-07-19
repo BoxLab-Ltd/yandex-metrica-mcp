@@ -1,28 +1,8 @@
-import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
-import { loadConfig } from '../config.js'
-import {
-    buildAuthorizeUrl,
-    exchangeCode,
-    type OAuthClientConfig,
-} from '../auth/oauth.js'
-import { generatePkce } from '../auth/pkce.js'
+import { interactiveLogin } from '../auth/login.js'
+import type { OAuthClientConfig } from '../auth/oauth.js'
 import { createFileTokenStore, defaultTokenPath } from '../auth/tokenStore.js'
-
-/** Best-effort: open the authorization URL in the user's browser. */
-function tryOpenBrowser(url: string): void {
-    const cmd =
-        process.platform === 'darwin'
-            ? 'open'
-            : process.platform === 'win32'
-              ? 'explorer'
-              : 'xdg-open'
-    try {
-        spawn(cmd, [url], { stdio: 'ignore', detached: true }).unref()
-    } catch {
-        // Opening a browser is a convenience; ignore failures.
-    }
-}
+import { loadConfig } from '../config.js'
 
 /** Prompt the user on stdin and resolve with the trimmed answer. */
 function prompt(question: string): Promise<string> {
@@ -35,14 +15,20 @@ function prompt(question: string): Promise<string> {
     })
 }
 
+export interface AuthOptions {
+    /** Force the copy-paste flow instead of the loopback redirect. */
+    oob?: boolean
+}
+
 /**
- * Interactive sign-in via the authorization-code + PKCE flow (out-of-band).
- * Opens the consent page, the user copies the code shown by Yandex, and we
- * exchange it for a token — no client secret needed. The token is cached
- * (mode 0600) and is valid ~1 year.
+ * Interactive sign-in (authorization-code + PKCE). Uses the loopback redirect so
+ * the browser returns the code automatically; falls back to copy-paste when the
+ * local port is unavailable or `--oob` is passed. The token is cached (mode
+ * 0600) and is valid ~1 year.
  */
 export async function runAuth(
     env: NodeJS.ProcessEnv = process.env,
+    opts: AuthOptions = {},
 ): Promise<void> {
     const config = loadConfig(env)
     const oauth: OAuthClientConfig = {
@@ -51,23 +37,19 @@ export async function runAuth(
         baseUrl: config.oauthBaseUrl,
     }
 
-    const pkce = generatePkce()
-    const url = buildAuthorizeUrl(oauth, {
-        codeChallenge: pkce.challenge,
-        scope: 'metrika:read',
-    })
-
-    console.log('\nTo authorize this server with Yandex Metrica:')
-    console.log(`  1. Open this URL and approve access:\n     ${url}`)
-    console.log('  2. Copy the code Yandex shows you on the next page.\n')
-    tryOpenBrowser(url)
-
-    const code = await prompt('Paste the code here: ')
-    if (!code) throw new Error('No code entered — aborting.')
-
-    const tokens = await exchangeCode(oauth, {
-        code,
-        codeVerifier: pkce.verifier,
+    const tokens = await interactiveLogin({
+        oauth,
+        loopbackPort: config.oauthLoopbackPort,
+        forceOob: opts.oob,
+        log: message => console.log(message),
+        promptForCode: async url => {
+            console.log('\nTo authorize this server with Yandex Metrica:')
+            console.log(`  1. Open this URL and approve access:\n     ${url}`)
+            console.log(
+                '  2. Copy the code Yandex shows you on the next page.\n',
+            )
+            return prompt('Paste the code here: ')
+        },
     })
 
     const store = createFileTokenStore(defaultTokenPath(env))
