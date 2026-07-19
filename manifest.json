@@ -1,0 +1,59 @@
+{
+    "manifest_version": "0.3",
+    "name": "yandex-metrica-mcp",
+    "display_name": "Yandex Metrica",
+    "version": "0.2.0",
+    "description": "Query your Yandex Metrica web analytics — reports, conversions, and raw logs — from an AI agent. Read-only.",
+    "author": {
+        "name": "BoxLab",
+        "url": "https://github.com/BoxLab-Ltd"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp.git"
+    },
+    "homepage": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp#readme",
+    "license": "MIT",
+    "keywords": [
+        "yandex",
+        "metrica",
+        "metrika",
+        "analytics",
+        "web-analytics",
+        "mcp"
+    ],
+    "icon": "assets/icon-512.png",
+    "server": {
+        "type": "node",
+        "entry_point": "dist/index.js",
+        "mcp_config": {
+            "command": "node",
+            "args": ["${__dirname}/dist/index.js"],
+            "env": {
+                "YANDEX_METRIKA_COUNTER_ID": "${user_config.counter_id}",
+                "YANDEX_METRIKA_TOKEN": "${user_config.token}"
+            }
+        }
+    },
+    "user_config": {
+        "counter_id": {
+            "type": "string",
+            "title": "Counter ID",
+            "description": "Default Yandex Metrica counter id (optional — tools also take a counterId, and the login tool lists your counters).",
+            "required": false
+        },
+        "token": {
+            "type": "string",
+            "title": "Static OAuth token",
+            "description": "Optional. Leave empty and sign in with the login tool. For CI/non-interactive use, paste a metrika:read token — stored in your OS keychain.",
+            "sensitive": true,
+            "required": false
+        }
+    },
+    "compatibility": {
+        "platforms": ["darwin", "win32", "linux"],
+        "runtimes": {
+            "node": ">=18.0.0"
+        }
+    }
+}

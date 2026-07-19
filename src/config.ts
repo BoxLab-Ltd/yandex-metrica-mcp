@@ -78,11 +78,28 @@ const REQUEST_TIMEOUT_MS = 60_000
 const DEFAULT_ROW_LIMIT = 100
 
 /**
+ * Drop empty and unexpanded-`${...}` values so an optional, unset variable reads
+ * as absent. A Desktop Extension (.mcpb) substitutes an untouched optional
+ * user_config into the env as `""`, which would otherwise fail `min(1)`/positive
+ * validation and stop the server from starting.
+ */
+function cleanEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+    const out: NodeJS.ProcessEnv = {}
+    for (const [key, value] of Object.entries(env)) {
+        if (value === undefined) continue
+        const trimmed = value.trim()
+        if (trimmed === '' || /^\$\{[^}]*\}$/.test(trimmed)) continue
+        out[key] = value
+    }
+    return out
+}
+
+/**
  * Load and validate configuration from the given environment (defaults to
  * `process.env`). Throws a single, human-readable error listing every problem.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-    const parsed = EnvSchema.safeParse(env)
+    const parsed = EnvSchema.safeParse(cleanEnv(env))
     if (!parsed.success) {
         const issues = parsed.error.issues
             .map(i => `  - ${i.path.join('.')}: ${i.message}`)
