@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import type { OAuthClientConfig, TokenSet } from '../src/auth/oauth.js'
 import {
     RefreshingTokenProvider,
+    SessionTokenProvider,
     StaticTokenProvider,
 } from '../src/auth/provider.js'
 import type { TokenStore } from '../src/auth/tokenStore.js'
@@ -52,6 +53,32 @@ describe('StaticTokenProvider', () => {
         const p = new StaticTokenProvider('tok')
         expect(await p.getAccessToken()).toBe('tok')
         expect(await p.forceRefresh()).toBe('tok')
+    })
+})
+
+describe('SessionTokenProvider', () => {
+    it('throws actionable guidance when no token is present', async () => {
+        const p = new SessionTokenProvider(null, memStore(null))
+        await expect(p.getAccessToken()).rejects.toThrow(/not signed in/i)
+        expect(p.canRefresh()).toBe(false)
+    })
+
+    it('returns a token adopted via setTokens (in-process login)', async () => {
+        const p = new SessionTokenProvider(null, memStore(null))
+        p.setTokens({ accessToken: 'LIVE', expiresAt: 0 })
+        expect(await p.getAccessToken()).toBe('LIVE')
+    })
+
+    it('lazily picks up a token written to the store after boot', async () => {
+        const store = memStore(null)
+        const p = new SessionTokenProvider(null, store)
+        store.write({ accessToken: 'FROM_DISK', expiresAt: 0 })
+        expect(await p.getAccessToken()).toBe('FROM_DISK')
+    })
+
+    it('returns its seeded token without a store', async () => {
+        const p = new SessionTokenProvider('SEED')
+        expect(await p.getAccessToken()).toBe('SEED')
     })
 })
 

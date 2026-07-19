@@ -32,7 +32,7 @@ function ctxWith(fetchImpl: typeof fetch): ToolContext {
         fetchImpl,
         sleep: async () => {},
     })
-    return { client, config: loadConfig({}) }
+    return { client, config: loadConfig({}), onLogin: () => {} }
 }
 
 const structured = (res: CallToolResult) =>

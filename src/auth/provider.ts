@@ -12,9 +12,11 @@ export interface TokenProvider {
     forceRefresh(rejected?: string): Promise<string>
     /** Whether forceRefresh could ever yield a different token. */
     canRefresh(): boolean
+    /** Adopt a token set from an in-process login, updating the live token. */
+    setTokens?(tokens: TokenSet): void
 }
 
-/** A fixed token (env var or a cached access token without refresh creds). */
+/** A fixed token (env var). Immutable — CI/static use, not the login flow. */
 export class StaticTokenProvider implements TokenProvider {
     constructor(private readonly token: string) {}
     async getAccessToken(): Promise<string> {
@@ -25,6 +27,45 @@ export class StaticTokenProvider implements TokenProvider {
     }
     canRefresh(): boolean {
         return false
+    }
+}
+
+export const NOT_AUTHENTICATED_MESSAGE =
+    'Not signed in to Yandex Metrica. Use the `login` tool to sign in (it opens ' +
+    'your browser), or run `yandex-metrica-mcp auth` in a terminal.'
+
+/**
+ * Holds a cached access token that may be absent at startup, so the server can
+ * boot before the first sign-in. Yields the token once present (adopted via
+ * {@link setTokens} after `login`, or read from the store if one landed there
+ * out of band); otherwise throws actionable guidance instead of crashing.
+ */
+export class SessionTokenProvider implements TokenProvider {
+    constructor(
+        private token: string | null,
+        private readonly store?: TokenStore,
+    ) {}
+
+    async getAccessToken(): Promise<string> {
+        if (this.token) return this.token
+        const cached = this.store?.read()
+        if (cached?.accessToken) {
+            this.token = cached.accessToken
+            return this.token
+        }
+        throw new Error(NOT_AUTHENTICATED_MESSAGE)
+    }
+
+    async forceRefresh(): Promise<string> {
+        return this.getAccessToken()
+    }
+
+    canRefresh(): boolean {
+        return false
+    }
+
+    setTokens(tokens: TokenSet): void {
+        this.token = tokens.accessToken
     }
 }
 
@@ -73,6 +114,10 @@ export class RefreshingTokenProvider implements TokenProvider {
 
     canRefresh(): boolean {
         return true
+    }
+
+    setTokens(tokens: TokenSet): void {
+        this.current = tokens
     }
 
     private refresh(): Promise<string> {

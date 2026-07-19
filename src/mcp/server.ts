@@ -10,6 +10,7 @@ import {
 import type { ToolContext } from './context.js'
 import { registerDescribeCounter } from './tools/describeCounter.js'
 import { registerGetMetadata } from './tools/getMetadata.js'
+import { registerLogin, registerSubmitCode } from './tools/login.js'
 import { registerLogsClean } from './tools/logsClean.js'
 import { registerLogsDownload } from './tools/logsDownload.js'
 import { registerLogsRequest } from './tools/logsRequest.js'
@@ -24,7 +25,7 @@ import { registerRunTimeseries } from './tools/runTimeseries.js'
  * context, and all registered tools. Transport is wired up by the caller.
  */
 export function createServer(config: Config = loadConfig()): McpServer {
-    const { provider, mode } = resolveTokenProvider(config)
+    const { provider, store, mode } = resolveTokenProvider(config)
     // stderr only — stdout carries the MCP protocol on the stdio transport.
     console.error(`yandex-metrica-mcp: auth source = ${mode}`)
 
@@ -39,9 +40,18 @@ export function createServer(config: Config = loadConfig()): McpServer {
         lang: config.lang,
     })
 
-    const ctx: ToolContext = { client, config }
+    const ctx: ToolContext = {
+        client,
+        config,
+        onLogin: tokens => {
+            store.write(tokens)
+            provider.setTokens?.(tokens)
+        },
+    }
     const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION })
 
+    registerLogin(server, ctx)
+    registerSubmitCode(server, ctx)
     registerGetMetadata(server, ctx)
     registerDescribeCounter(server, ctx)
     registerRunReport(server, ctx)

@@ -1,10 +1,13 @@
 import type { Config } from '../config.js'
 import type { MetricaClient } from '../api/client.js'
+import type { TokenSet } from '../auth/oauth.js'
 
-/** Everything a tool handler needs: the API client and resolved config. */
+/** Everything a tool handler needs: the API client, config, and login sink. */
 export interface ToolContext {
     client: MetricaClient
     config: Config
+    /** Persist and adopt a token set obtained by the `login`/`submit_code` tools. */
+    onLogin(tokens: TokenSet): void
 }
 
 /**

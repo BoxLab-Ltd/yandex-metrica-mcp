@@ -21,11 +21,14 @@ function envWithTokenFile(extra: Record<string, string> = {}): {
 }
 
 describe('resolveTokenProvider', () => {
-    it('throws actionable guidance when no credentials exist', () => {
+    it('boots unauthenticated with an actionable error when no credentials exist', async () => {
         const { env, cleanup } = envWithTokenFile()
         try {
-            expect(() => resolveTokenProvider(loadConfig(env), env)).toThrow(
-                /No Yandex Metrica credentials/,
+            const { provider, mode } = resolveTokenProvider(loadConfig(env), env)
+            expect(mode).toMatch(/not signed in/i)
+            expect(provider.canRefresh()).toBe(false)
+            await expect(provider.getAccessToken()).rejects.toThrow(
+                /not signed in/i,
             )
         } finally {
             cleanup()
