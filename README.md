@@ -50,7 +50,8 @@ required up front; you log in interactively in step 2:
 npx yandex-metrica-mcp auth
 ```
 
-Approve the Yandex consent page and paste the code back. The login uses
+Approve access in the browser and you're done — the code is handed back
+automatically over a local redirect, no copy-paste. The login uses
 authorization-code + PKCE, so **no client secret ever touches your machine**; the
 token is cached (mode 0600) and valid for ~1 year.
 
@@ -85,8 +86,11 @@ flexible report tools, strict token/context discipline, read-only by default.
 - `run_comparison` — compare two periods with absolute and percentage deltas.
 - `run_drilldown` — drill down through a dimension tree.
 - `run_timeseries` — metrics split into a time series (`/bytime`) for trends.
-- `get_metadata` — discover available counters, goals, and common
+- `get_metadata` — discover the counters on your account and a catalog of common
   dimensions/metrics (and Logs API fields) so the model queries with real names.
+- `describe_counter` — read one counter's configuration (goals, segments,
+  filters, operations, access grants) via an `include` selector. The goals
+  section gives the goal ids needed for conversion metrics in `run_report`.
 - `logs_request` / `logs_status` / `logs_download` / `logs_clean` — Logs API:
   export raw, un-sampled session (`visits`) or hit (`hits`) rows. Async lifecycle
   (request → poll → download → clean); `logs_download` returns a bounded sample
@@ -114,8 +118,11 @@ ships a built-in public OAuth client. Run once:
 yandex-metrica-mcp auth     # or, in dev: bun run auth
 ```
 
-It opens a Yandex consent page; after you approve, Yandex shows a code that you
-paste back into the terminal. The token is cached at
+It opens the Yandex consent page in your browser; after you approve, the code is
+returned automatically over a loopback redirect (`http://127.0.0.1:53682`) — no
+copy-paste. If that port is taken, it falls back to showing a code you paste in
+(force that flow with `auth --oob`, or change the port with
+`YANDEX_OAUTH_LOOPBACK_PORT`). The token is cached at
 `~/.config/yandex-metrica-mcp/token.json` (mode 0600) and is valid for ~1 year;
 re-run `auth` when it expires. The login uses authorization-code + PKCE, so **no
 client secret is stored anywhere**. A cached login takes precedence over
@@ -148,7 +155,10 @@ Once connected, an agent can answer questions like:
   (server returns A, B, and the deltas).
 - “Which operating systems do my visitors use? Let me drill into Windows
   versions.” → `run_drilldown`, then again with `parentId`.
-- “What counters and goals can I query?” → `get_metadata`.
+- “What counters do I have?” → `get_metadata`.
+- “List this counter's goals, then show how the ‘Purchase’ goal converted last
+  week.” → `describe_counter` (`include: ["goals"]`) for the goal id, then
+  `run_report` with `ym:s:goal<id>conversionRate`.
 - “Export last month's raw sessions with landing pages and referrers for offline
   analysis.” → `logs_request` (`source: "visits"`), poll `logs_status`, then
   `logs_download` (`mode: "file"`), then `logs_clean` to free the quota.
