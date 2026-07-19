@@ -41,7 +41,6 @@
         "dev": "bun --watch src/index.ts",
         "start": "node dist/index.js",
         "auth": "bun src/index.ts auth",
-        "try": "bun scripts/try.ts",
         "try:logs": "bun scripts/try-logs.ts",
         "typecheck": "tsc -p tsconfig.json",
         "lint": "eslint .",
