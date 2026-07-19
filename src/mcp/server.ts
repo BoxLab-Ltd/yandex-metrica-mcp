@@ -8,6 +8,7 @@ import {
     type Config,
 } from '../config.js'
 import type { ToolContext } from './context.js'
+import { registerDescribeCounter } from './tools/describeCounter.js'
 import { registerGetMetadata } from './tools/getMetadata.js'
 import { registerLogsClean } from './tools/logsClean.js'
 import { registerLogsDownload } from './tools/logsDownload.js'
@@ -42,6 +43,7 @@ export function createServer(config: Config = loadConfig()): McpServer {
     const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION })
 
     registerGetMetadata(server, ctx)
+    registerDescribeCounter(server, ctx)
     registerRunReport(server, ctx)
     registerRunComparison(server, ctx)
     registerRunDrilldown(server, ctx)

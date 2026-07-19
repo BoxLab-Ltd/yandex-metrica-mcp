@@ -111,6 +111,7 @@ export const CounterSchema = z
         name: z.string().optional(),
         status: z.string().optional(),
         owner_login: z.string().optional(),
+        permission: z.string().optional(),
         site2: z
             .object({ site: z.string().optional() })
             .catchall(z.unknown())
@@ -141,6 +142,70 @@ export type Goal = z.infer<typeof GoalSchema>
 
 export const GoalsResponseSchema = z.object({
     goals: z.array(GoalSchema),
+})
+
+/** Single-counter wrapper for GET .../counter/{id}. */
+export const CounterResponseSchema = z.object({ counter: CounterSchema })
+
+/** Management API: a saved API segment (lives under the /apisegment/ path). */
+export const SegmentSchema = z
+    .object({
+        segment_id: z.number(),
+        name: z.string().optional(),
+        expression: z.string().optional(),
+        status: z.string().optional(),
+        segment_source: z.string().optional(),
+    })
+    .catchall(z.unknown())
+export type Segment = z.infer<typeof SegmentSchema>
+export const SegmentsResponseSchema = z.object({
+    segments: z.array(SegmentSchema).default([]),
+})
+
+/** Management API: a traffic filter (excludes robots, internal IPs, etc.). */
+export const FilterSchema = z
+    .object({
+        id: z.number(),
+        attr: z.string().optional(),
+        type: z.string().optional(),
+        value: z.string().optional(),
+        action: z.string().optional(),
+        status: z.string().optional(),
+        with_subdomains: FlexibleBool.optional(),
+    })
+    .catchall(z.unknown())
+export type Filter = z.infer<typeof FilterSchema>
+export const FiltersResponseSchema = z.object({
+    filters: z.array(FilterSchema).default([]),
+})
+
+/** Management API: a URL-normalization operation applied at collection time. */
+export const OperationSchema = z
+    .object({
+        id: z.number(),
+        action: z.string().optional(),
+        attr: z.string().optional(),
+        value: z.string().optional(),
+        status: z.string().optional(),
+    })
+    .catchall(z.unknown())
+export type Operation = z.infer<typeof OperationSchema>
+export const OperationsResponseSchema = z.object({
+    operations: z.array(OperationSchema).default([]),
+})
+
+/** Management API: a per-counter access grant. */
+export const GrantSchema = z
+    .object({
+        user_login: z.string().optional(),
+        perm: z.string().optional(),
+        created_at: z.string().optional(),
+        comment: z.string().optional(),
+    })
+    .catchall(z.unknown())
+export type Grant = z.infer<typeof GrantSchema>
+export const GrantsResponseSchema = z.object({
+    grants: z.array(GrantSchema).default([]),
 })
 
 /**

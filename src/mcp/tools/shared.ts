@@ -215,6 +215,37 @@ export const timeseriesInputShape = {
 export const DEFAULT_DATE1 = '7daysAgo'
 export const DEFAULT_DATE2 = 'yesterday'
 
+/* ---- Management API (read) inputs --------------------------------------- */
+
+/** Configuration sections describe_counter can return. */
+export const COUNTER_SECTIONS = [
+    'settings',
+    'goals',
+    'segments',
+    'filters',
+    'operations',
+    'grants',
+] as const
+
+/** Input shape for describe_counter (one counter, selected config sections). */
+export const describeCounterInputShape = {
+    counterId,
+    include: z
+        .array(z.enum(COUNTER_SECTIONS))
+        .optional()
+        .describe(
+            'Which configuration sections to return. Default ["settings","goals"]. ' +
+                '"goals" gives the goal ids needed for conversion metrics in run_report; ' +
+                '"grants" is a read-only access audit.',
+        ),
+    fullResponse: z
+        .boolean()
+        .optional()
+        .describe(
+            'If true, return the full raw objects with every field. Default false: a curated subset to save context.',
+        ),
+}
+
 /* ---- Logs API inputs ---------------------------------------------------- */
 
 const logsSource = z

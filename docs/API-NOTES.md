@@ -83,6 +83,40 @@ live counters/goals (Management API).
 - Per-goal metrics: `ym:s:goal<id>reaches|visits|users|conversionRate`.
 - Attribution placeholder `<attribution>` defaults to `lastsign`.
 
+## Management API (read)
+
+Read-only accessors under `src/api/metadata.ts`; all plain GET, `metrika:read`
+suffices. Endpoints and response-wrapper keys below **verified live on
+2026-07-19** against a real counter. Two MCP tools surface them, kept few and
+flexible on purpose: **`get_metadata`** returns the account's counter list (plus
+the static field catalog), and **`describe_counter`** returns a single counter's
+config, choosing sections via an `include` param instead of one tool per
+resource.
+
+| Accessor          | Endpoint                                              | Wrapper       |
+| ----------------- | ----------------------------------------------------- | ------------- |
+| `listCounters`    | `GET /management/v1/counters` (`per_page=1000`)       | `{ counters }`|
+| `getCounter`      | `GET /management/v1/counter/{id}`                     | `{ counter }` |
+| `listGoals`       | `GET /management/v1/counter/{id}/goals`               | `{ goals }`   |
+| `listSegments`    | `GET /management/v1/counter/{id}/apisegment/segments` | `{ segments }`|
+| `listFilters`     | `GET /management/v1/counter/{id}/filters`             | `{ filters }` |
+| `listOperations`  | `GET /management/v1/counter/{id}/operations`          | `{ operations }`|
+| `listGrants`      | `GET /management/v1/counter/{id}/grants`              | `{ grants }`  |
+
+- `describe_counter` maps `include` sections to accessors: settings→getCounter,
+  goals→listGoals, segments→listSegments, filters→listFilters,
+  operations→listOperations, grants→listGrants. A single goal's conditions come
+  back through the goals section under `fullResponse`, so no separate goal fetch
+  is surfaced.
+- Segments live under `/apisegment/segments` (NOT `/segments`) and key on
+  `segment_id`, not `id`. Goals/counters key on `id`; grants key on `user_login`.
+- A counter's `permission` field (`own`/`edit`/`view`/…) tells the token owner's
+  access level. `metrika:read` lists and reads; **mutation would need
+  `metrika:write` plus an `edit` grant** on the counter (not implemented — the
+  server stays read-only).
+- List bodies may omit the key when empty; schemas `.default([])` so an empty
+  counter parses cleanly.
+
 ## Logs API (raw row-level export)
 
 Async, under the **management** namespace. Paths

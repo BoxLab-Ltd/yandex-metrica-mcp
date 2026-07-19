@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { z } from 'zod'
 import {
+    describeCounterInputShape,
     logsDownloadInputShape,
     logsRequestInputShape,
     reportInputShape,
@@ -107,6 +108,30 @@ describe('logs_download input schema', () => {
         expect(
             logsDownloadSchema.safeParse({ requestId: 1, maxRows: 5000 })
                 .success,
+        ).toBe(false)
+    })
+})
+
+const describeCounterSchema = z.object(describeCounterInputShape)
+
+describe('describe_counter input schema', () => {
+    it('accepts an empty call (counterId from config, default sections)', () => {
+        expect(describeCounterSchema.safeParse({}).success).toBe(true)
+    })
+
+    it('accepts a selection of valid sections', () => {
+        expect(
+            describeCounterSchema.safeParse({
+                counterId: 123,
+                include: ['goals', 'grants'],
+                fullResponse: true,
+            }).success,
+        ).toBe(true)
+    })
+
+    it('rejects an unknown section', () => {
+        expect(
+            describeCounterSchema.safeParse({ include: ['webvisor'] }).success,
         ).toBe(false)
     })
 })

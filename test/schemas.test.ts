@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'bun:test'
 import {
     ComparisonResponseSchema,
+    CounterResponseSchema,
     CountersResponseSchema,
     DataResponseSchema,
     DrilldownResponseSchema,
+    FiltersResponseSchema,
     GoalsResponseSchema,
+    GrantsResponseSchema,
+    OperationsResponseSchema,
+    SegmentsResponseSchema,
 } from '../src/api/schemas.js'
 
 describe('response schemas (samples from the verified contract)', () => {
@@ -101,5 +106,80 @@ describe('response schemas (samples from the verified contract)', () => {
         })
         expect(goals.goals[0]?.is_favorite).toBe(true)
         expect(goals.goals[1]?.is_favorite).toBe(false)
+    })
+})
+
+describe('management read schemas (single-resource + lists)', () => {
+    it('unwraps a single counter and keeps the permission field', () => {
+        const counter = CounterResponseSchema.parse({
+            counter: {
+                id: 123,
+                name: 'Site',
+                site2: { site: 'example.com' },
+                status: 'Active',
+                permission: 'own',
+            },
+        }).counter
+        expect(counter.id).toBe(123)
+        expect(counter.permission).toBe('own')
+    })
+
+    it('keeps loosely-typed goal conditions through the goals list', () => {
+        const goals = GoalsResponseSchema.parse({
+            goals: [
+                {
+                    id: 7,
+                    name: 'Purchase',
+                    type: 'url',
+                    conditions: [{ type: 'contain', url: '/thank-you' }],
+                },
+            ],
+        }).goals
+        expect(goals[0]?.conditions).toEqual([
+            { type: 'contain', url: '/thank-you' },
+        ])
+    })
+
+    it('parses segments, filters, operations and grants lists', () => {
+        expect(
+            SegmentsResponseSchema.parse({
+                segments: [
+                    { segment_id: 1, name: 'Buyers', expression: "ym:s:goal==1" },
+                ],
+            }).segments[0]?.segment_id,
+        ).toBe(1)
+
+        expect(
+            FiltersResponseSchema.parse({
+                filters: [
+                    {
+                        id: 5,
+                        action: 'exclude',
+                        attr: 'client_ip',
+                        type: 'equal',
+                        value: '10.0.0.1',
+                    },
+                ],
+            }).filters[0]?.action,
+        ).toBe('exclude')
+
+        expect(
+            OperationsResponseSchema.parse({
+                operations: [
+                    { id: 9, action: 'cut_parameter', attr: 'referer', value: 'gclid' },
+                ],
+            }).operations[0]?.id,
+        ).toBe(9)
+
+        expect(
+            GrantsResponseSchema.parse({
+                grants: [{ user_login: 'user@ya.ru', perm: 'view' }],
+            }).grants[0]?.perm,
+        ).toBe('view')
+    })
+
+    it('defaults absent list bodies to empty arrays', () => {
+        expect(SegmentsResponseSchema.parse({}).segments).toEqual([])
+        expect(GrantsResponseSchema.parse({}).grants).toEqual([])
     })
 })
