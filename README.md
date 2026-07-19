@@ -73,6 +73,14 @@ Claude Code's plugin system instead of the config above:
 
 Then run `npx yandex-metrica-mcp auth` once to log in.
 
+### Or install as a Claude Desktop extension (.mcpb)
+
+For a one-click install with no JSON, download the `.mcpb` from the
+[latest release](https://github.com/BoxLab-Ltd/yandex-metrica-mcp/releases/latest)
+and open it with Claude Desktop (or drag it into Settings → Extensions). It asks
+for an optional default counter id; then sign in from the chat with the `login`
+tool (or run `npx yandex-metrica-mcp auth`).
+
 ## Why
 
 There is no official Yandex Metrica MCP server, and existing community ones are
