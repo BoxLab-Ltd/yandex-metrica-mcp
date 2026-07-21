@@ -1,6 +1,11 @@
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import {
+    cleanEnv,
+    loadYandexAuthConfig,
+    type YandexAuthConfig,
+} from '@boxlab/yandex-mcp-core'
 import { z } from 'zod'
 
 const require = createRequire(import.meta.url)
@@ -18,25 +23,15 @@ export const SERVER_VERSION = pkg.version
  */
 export const EMBEDDED_OAUTH_CLIENT_ID = '6f14d1c1384440b1b2915f6d956da84b'
 
+/** OAuth scope this server requests (read-only Metrica access). */
+const SCOPE = 'metrika:read'
+
 /**
- * Resolved, validated runtime configuration for the server.
- *
- * Everything is sourced from environment variables so the server stays
- * stateless and secret-free on disk. See `.env.example` for the contract.
+ * Resolved, validated domain configuration for the server. Auth lives in a
+ * separate {@link YandexAuthConfig} (see {@link loadAuthConfig}); everything
+ * here is sourced from environment variables so the server stays stateless.
  */
 export interface Config {
-    /** Static Yandex Metrica OAuth token (alternative to the `auth` login). */
-    readonly token?: string
-    /** OAuth client id used by `auth` — the embedded public client, or an override. */
-    readonly oauthClientId: string
-    /** True when using the user's own app (env override) rather than the embedded one. */
-    readonly oauthIsCustomApp: boolean
-    /** OAuth client secret (only for a user's own app; enables token refresh). */
-    readonly oauthClientSecret?: string
-    /** Yandex ID OAuth base URL. */
-    readonly oauthBaseUrl: string
-    /** Fixed loopback port for the `auth` redirect (must match the app's registered URI). */
-    readonly oauthLoopbackPort: number
     /** Optional default counter id used when a tool call omits `counterId`. */
     readonly defaultCounterId?: number
     /** API base URL (overridable only for tests/mocks). */
@@ -56,16 +51,6 @@ export interface Config {
 }
 
 const EnvSchema = z.object({
-    YANDEX_METRIKA_TOKEN: z.string().min(1).optional(),
-    YANDEX_OAUTH_CLIENT_ID: z.string().min(1).optional(),
-    YANDEX_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
-    YANDEX_OAUTH_BASE_URL: z.url().default('https://oauth.yandex.com'),
-    YANDEX_OAUTH_LOOPBACK_PORT: z.coerce
-        .number()
-        .int()
-        .min(1024)
-        .max(65535)
-        .default(53682),
     YANDEX_METRIKA_COUNTER_ID: z.coerce.number().int().positive().optional(),
     YANDEX_METRIKA_LANG: z.string().min(2).max(5).default('en'),
     YANDEX_METRIKA_BASE_URL: z.url().default('https://api-metrika.yandex.net'),
@@ -78,25 +63,9 @@ const REQUEST_TIMEOUT_MS = 60_000
 const DEFAULT_ROW_LIMIT = 100
 
 /**
- * Drop empty and unexpanded-`${...}` values so an optional, unset variable reads
- * as absent. A Desktop Extension (.mcpb) substitutes an untouched optional
- * user_config into the env as `""`, which would otherwise fail `min(1)`/positive
- * validation and stop the server from starting.
- */
-function cleanEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-    const out: NodeJS.ProcessEnv = {}
-    for (const [key, value] of Object.entries(env)) {
-        if (value === undefined) continue
-        const trimmed = value.trim()
-        if (trimmed === '' || /^\$\{[^}]*\}$/.test(trimmed)) continue
-        out[key] = value
-    }
-    return out
-}
-
-/**
- * Load and validate configuration from the given environment (defaults to
- * `process.env`). Throws a single, human-readable error listing every problem.
+ * Load and validate domain configuration from the given environment (defaults
+ * to `process.env`). Throws a single, human-readable error listing every
+ * problem. Auth is loaded separately via {@link loadAuthConfig}.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     const parsed = EnvSchema.safeParse(cleanEnv(env))
@@ -108,14 +77,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     }
 
     const e = parsed.data
-    const isCustomApp = e.YANDEX_OAUTH_CLIENT_ID !== undefined
     return {
-        token: e.YANDEX_METRIKA_TOKEN,
-        oauthClientId: e.YANDEX_OAUTH_CLIENT_ID ?? EMBEDDED_OAUTH_CLIENT_ID,
-        oauthIsCustomApp: isCustomApp,
-        oauthClientSecret: e.YANDEX_OAUTH_CLIENT_SECRET,
-        oauthBaseUrl: e.YANDEX_OAUTH_BASE_URL,
-        oauthLoopbackPort: e.YANDEX_OAUTH_LOOPBACK_PORT,
         defaultCounterId: e.YANDEX_METRIKA_COUNTER_ID,
         baseUrl: e.YANDEX_METRIKA_BASE_URL.replace(/\/+$/, ''),
         lang: e.YANDEX_METRIKA_LANG,
@@ -127,4 +89,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
             join(tmpdir(), 'yandex-metrica-mcp-logs'),
         userAgent: `${SERVER_NAME}/${SERVER_VERSION}`,
     }
+}
+
+/**
+ * Load this server's Yandex auth configuration: the `metrika:read` scope, the
+ * embedded public client (or a user's own app via `YANDEX_OAUTH_CLIENT_ID`),
+ * and the static-token env `YANDEX_METRIKA_TOKEN` (+ its `_FILE` override).
+ */
+export function loadAuthConfig(
+    env: NodeJS.ProcessEnv = process.env,
+): YandexAuthConfig {
+    return loadYandexAuthConfig(env, {
+        scope: SCOPE,
+        appName: SERVER_NAME,
+        embeddedClientId: EMBEDDED_OAUTH_CLIENT_ID,
+        staticTokenEnv: 'YANDEX_METRIKA_TOKEN',
+    })
 }

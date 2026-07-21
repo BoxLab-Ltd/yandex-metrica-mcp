@@ -1,8 +1,8 @@
+import { YandexClient } from '@boxlab/yandex-mcp-core'
 import { describe, expect, it, mock } from 'bun:test'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MetricaClient } from '../src/api/client.js'
 import {
     assertFieldsMatchSource,
     assertValidDateRange,
@@ -17,7 +17,7 @@ import {
 } from '../src/api/logs.js'
 
 function makeClient(fetchImpl: typeof fetch) {
-    return new MetricaClient({
+    return new YandexClient({
         baseUrl: 'https://api-metrika.yandex.net',
         getToken: async () => 'tok',
         userAgent: 'test/1.0',

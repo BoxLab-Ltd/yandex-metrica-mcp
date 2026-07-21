@@ -2,7 +2,7 @@ import { once } from 'node:events'
 import { createWriteStream } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import type { MetricaClient } from './client.js'
+import type { YandexClient } from '@boxlab/yandex-mcp-core'
 import {
     LOG_IN_PROGRESS_STATUSES,
     LOG_STATUS_PROCESSED,
@@ -99,7 +99,7 @@ export interface CreateLogRequestParams {
 }
 
 export async function evaluateLogRequest(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     p: Omit<CreateLogRequestParams, 'attribution'>,
 ): Promise<LogRequestEvaluation> {
@@ -118,7 +118,7 @@ export async function evaluateLogRequest(
 }
 
 export async function createLogRequest(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     p: CreateLogRequestParams,
 ): Promise<LogRequest> {
@@ -154,7 +154,7 @@ export async function createLogRequest(
 }
 
 export async function getLogRequest(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     requestId: number,
 ): Promise<LogRequest> {
@@ -165,7 +165,7 @@ export async function getLogRequest(
 }
 
 export async function listLogRequests(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<LogRequest[]> {
     const raw = await client.requestJson(
@@ -175,7 +175,7 @@ export async function listLogRequests(
 }
 
 export async function cleanLogRequest(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     requestId: number,
 ): Promise<LogRequest> {
@@ -187,7 +187,7 @@ export async function cleanLogRequest(
 }
 
 export async function cancelLogRequest(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     requestId: number,
 ): Promise<LogRequest> {
@@ -206,7 +206,7 @@ export interface LogSample {
 
 /** Download part 0 up to `maxRows` data rows; the stream stops early past that. */
 export async function downloadLogSample(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     requestId: number,
     maxRows: number,
@@ -247,7 +247,7 @@ export interface LogFileResult {
  * flat regardless of export size.
  */
 export async function downloadLogToFile(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
     requestId: number,
     partCount: number,

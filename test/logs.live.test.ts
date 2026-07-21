@@ -1,5 +1,5 @@
+import { resolveTokenProvider, YandexClient } from '@boxlab/yandex-mcp-core'
 import { describe, expect, it } from 'bun:test'
-import { MetricaClient } from '../src/api/client.js'
 import {
     assertFieldsMatchSource,
     assertValidDateRange,
@@ -12,8 +12,7 @@ import {
     isTerminal,
 } from '../src/api/logs.js'
 import { listCounters } from '../src/api/metadata.js'
-import { resolveTokenProvider } from '../src/auth/resolve.js'
-import { loadConfig } from '../src/config.js'
+import { loadAuthConfig, loadConfig } from '../src/config.js'
 
 /**
  * Live end-to-end for the full Logs API lifecycle against the real API. This
@@ -28,8 +27,8 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 suite('live: Logs API lifecycle (mutating, ~minutes)', () => {
     const config = loadConfig()
-    const { provider } = resolveTokenProvider(config)
-    const client = new MetricaClient({
+    const { provider } = resolveTokenProvider(loadAuthConfig())
+    const client = new YandexClient({
         baseUrl: config.baseUrl,
         getToken: () => provider.getAccessToken(),
         onUnauthorized: rejected => provider.forceRefresh(rejected),

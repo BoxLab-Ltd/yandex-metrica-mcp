@@ -1,13 +1,10 @@
+import type { YandexClient } from '@boxlab/yandex-mcp-core'
 import type { Config } from '../config.js'
-import type { MetricaClient } from '../api/client.js'
-import type { TokenSet } from '../auth/oauth.js'
 
-/** Everything a tool handler needs: the API client, config, and login sink. */
+/** Everything a tool handler needs: the API client and config. */
 export interface ToolContext {
-    client: MetricaClient
+    client: YandexClient
     config: Config
-    /** Persist and adopt a token set obtained by the `login`/`submit_code` tools. */
-    onLogin(tokens: TokenSet): void
 }
 
 /**

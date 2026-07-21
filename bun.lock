@@ -5,6 +5,7 @@
     "": {
       "name": "yandex-metrica-mcp",
       "dependencies": {
+        "@boxlab/yandex-mcp-core": "^0.1.1",
         "@modelcontextprotocol/sdk": "^1.29.0",
         "zod": "^4.4.3",
       },
@@ -21,6 +22,8 @@
     },
   },
   "packages": {
+    "@boxlab/yandex-mcp-core": ["@boxlab/yandex-mcp-core@0.1.1", "", { "dependencies": { "@modelcontextprotocol/sdk": "^1.29.0", "zod": "^4.4.3" } }, "sha512-aZg6C/UIp72SdeGl9l6qHUL0PRwh2NqgaBcLbDwRkGXy3RbVUfI3blSFEXsYTlWWhhBAo3jCifnk+GZBRD6YcA=="],
+
     "@eslint-community/eslint-utils": ["@eslint-community/eslint-utils@4.9.1", "", { "dependencies": { "eslint-visitor-keys": "^3.4.3" }, "peerDependencies": { "eslint": "^6.0.0 || ^7.0.0 || >=8.0.0" } }, "sha512-phrYmNiYppR7znFEdqgfWHXR6NCkZEK7hwWDHZUjit/2/U0r6XvkDl0SYnoM51Hq7FhCGdLDT6zxCCOY1hexsQ=="],
 
     "@eslint-community/regexpp": ["@eslint-community/regexpp@4.12.2", "", {}, "sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew=="],

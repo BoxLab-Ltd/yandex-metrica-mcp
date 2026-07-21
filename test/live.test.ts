@@ -1,9 +1,8 @@
+import { resolveTokenProvider, YandexClient } from '@boxlab/yandex-mcp-core'
 import { describe, expect, it } from 'bun:test'
-import { MetricaClient } from '../src/api/client.js'
 import { listCounters, listGoals } from '../src/api/metadata.js'
 import { runReport } from '../src/api/reporting.js'
-import { resolveTokenProvider } from '../src/auth/resolve.js'
-import { loadConfig } from '../src/config.js'
+import { loadAuthConfig, loadConfig } from '../src/config.js'
 
 /**
  * Live end-to-end against the real Yandex Metrica API — opt-in with `YM_LIVE=1`
@@ -15,8 +14,8 @@ const suite = LIVE ? describe : describe.skip
 
 suite('live: Reporting + Management (read-only)', () => {
     const config = loadConfig()
-    const { provider } = resolveTokenProvider(config)
-    const client = new MetricaClient({
+    const { provider } = resolveTokenProvider(loadAuthConfig())
+    const client = new YandexClient({
         baseUrl: config.baseUrl,
         getToken: () => provider.getAccessToken(),
         onUnauthorized: rejected => provider.forceRefresh(rejected),

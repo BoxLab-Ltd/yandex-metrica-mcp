@@ -1,3 +1,4 @@
+import { YandexApiError } from '@boxlab/yandex-mcp-core'
 import { describe, expect, it } from 'bun:test'
 import {
     errorResult,
@@ -6,7 +7,6 @@ import {
     formatDataResponse,
     formatDrilldownResponse,
 } from '../src/mcp/format.js'
-import { MetricaApiError } from '../src/api/errors.js'
 import type {
     BytimeResponse,
     ComparisonResponse,
@@ -349,7 +349,7 @@ describe('formatBytimeResponse', () => {
 describe('errorResult', () => {
     it('adds a re-auth hint and structured content for an invalid/expired token (401)', () => {
         const out = errorResult(
-            new MetricaApiError(401, 'Metrica API 401: invalid_token', [
+            new YandexApiError(401, 'Yandex API 401: invalid_token', [
                 'invalid_token',
             ]),
         )
@@ -363,7 +363,7 @@ describe('errorResult', () => {
 
     it('does NOT suggest re-auth for a 403 counter-access denial', () => {
         const out = errorResult(
-            new MetricaApiError(403, 'Metrica API 403: access_denied', [
+            new YandexApiError(403, 'Yandex API 403: access_denied', [
                 'access_denied',
             ]),
         )

@@ -1,4 +1,4 @@
-import type { MetricaClient } from './client.js'
+import type { YandexClient } from '@boxlab/yandex-mcp-core'
 import {
     BytimeResponseSchema,
     ComparisonResponseSchema,
@@ -33,7 +33,7 @@ export interface ReportParams {
 
 /** `GET /stat/v1/data` — table report. */
 export async function runReport(
-    client: MetricaClient,
+    client: YandexClient,
     p: ReportParams,
 ): Promise<DataResponse> {
     const raw = await client.request('/stat/v1/data', {
@@ -78,7 +78,7 @@ export interface ComparisonParams {
 
 /** `GET /stat/v1/data/comparison` — per-row metrics become `{ a, b }`. */
 export async function runComparison(
-    client: MetricaClient,
+    client: YandexClient,
     p: ComparisonParams,
 ): Promise<ComparisonResponse> {
     const raw = await client.request('/stat/v1/data/comparison', {
@@ -111,7 +111,7 @@ export interface DrilldownParams extends ReportParams {
 
 /** `GET /stat/v1/data/drilldown` — singular `dimension` + per-row `expand`. */
 export async function runDrilldown(
-    client: MetricaClient,
+    client: YandexClient,
     p: DrilldownParams,
 ): Promise<DrilldownResponse> {
     const raw = await client.request('/stat/v1/data/drilldown', {
@@ -154,7 +154,7 @@ export interface BytimeParams {
 
 /** `GET /stat/v1/data/bytime` — metrics split into a series over time intervals. */
 export async function runBytime(
-    client: MetricaClient,
+    client: YandexClient,
     p: BytimeParams,
 ): Promise<BytimeResponse> {
     const raw = await client.request('/stat/v1/data/bytime', {

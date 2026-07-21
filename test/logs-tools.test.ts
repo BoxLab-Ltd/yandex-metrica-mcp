@@ -1,7 +1,7 @@
+import { YandexClient } from '@boxlab/yandex-mcp-core'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { describe, expect, it, mock } from 'bun:test'
-import { MetricaClient } from '../src/api/client.js'
 import { loadConfig } from '../src/config.js'
 import type { ToolContext } from '../src/mcp/context.js'
 import { registerLogsRequest } from '../src/mcp/tools/logsRequest.js'
@@ -23,7 +23,7 @@ function capture(register: Register, ctx: ToolContext): Handler {
 }
 
 function ctxWith(fetchImpl: typeof fetch): ToolContext {
-    const client = new MetricaClient({
+    const client = new YandexClient({
         baseUrl: 'https://api-metrika.yandex.net',
         getToken: async () => 'tok',
         userAgent: 'test/1.0',
@@ -32,7 +32,7 @@ function ctxWith(fetchImpl: typeof fetch): ToolContext {
         fetchImpl,
         sleep: async () => {},
     })
-    return { client, config: loadConfig({}), onLogin: () => {} }
+    return { client, config: loadConfig({}) }
 }
 
 const structured = (res: CallToolResult) =>

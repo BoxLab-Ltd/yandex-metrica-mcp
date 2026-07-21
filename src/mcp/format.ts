@@ -1,5 +1,8 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { MetricaApiError } from '../api/errors.js'
+import {
+    errorResult as coreErrorResult,
+    toToolResult,
+} from '@boxlab/yandex-mcp-core'
 import {
     isProcessed,
     isTerminal,
@@ -481,68 +484,13 @@ export function formatLogDownload(
     }
 }
 
-/** Wrap a structured object as a successful tool result (text + structured). */
-export function toToolResult(
-    structured: Record<string, unknown>,
-): CallToolResult {
-    return {
-        content: [{ type: 'text', text: JSON.stringify(structured, null, 2) }],
-        structuredContent: structured,
-    }
-}
+export { toToolResult }
 
-/** A short, actionable next step for the model based on the API error kind. */
-function recoveryHint(err: MetricaApiError): string | undefined {
-    if (err.status === 401 || err.errorTypes.includes('invalid_token')) {
-        return (
-            'The access token is invalid or expired. Re-authenticate by running ' +
-            '`npx -y yandex-metrica-mcp auth` (or set a fresh YANDEX_METRIKA_TOKEN).'
-        )
-    }
-    // 403/access_denied is a missing counter grant, NOT a stale token — re-auth
-    // will not help, so do not suggest it here.
-    if (err.status === 403 || err.errorTypes.includes('access_denied')) {
-        return (
-            'Access denied: the token lacks access to this counter. Grant the ' +
-            'account access to the counter, or call a counterId you can read.'
-        )
-    }
-    if (err.isThrottled) {
-        return (
-            'Rate/quota limit hit. Wait a few minutes and retry with fewer parallel ' +
-            'calls. Metrica resets its daily quota at 00:00 GMT.'
-        )
-    }
-    if (err.errorTypes.includes('timeout')) {
-        return 'The request timed out. Narrow the date range or reduce dimensions/metrics, then retry.'
-    }
-    if (err.errorTypes.includes('network_error')) {
-        return 'Network error reaching the Metrica API. Check connectivity and retry.'
-    }
-    return undefined
-}
-
-/** Wrap an error as a tool result the model can read and recover from. */
+/**
+ * Wrap an error as a tool result the model can read and recover from. Delegates
+ * to the shared formatter, tailoring the 403 hint to this server's resource
+ * (a counter).
+ */
 export function errorResult(err: unknown): CallToolResult {
-    if (err instanceof MetricaApiError) {
-        const hint = recoveryHint(err)
-        const text = hint
-            ? `Error: ${err.message}\n${hint}`
-            : `Error: ${err.message}`
-        return {
-            content: [{ type: 'text', text }],
-            structuredContent: {
-                error: err.message,
-                status: err.status,
-                error_types: err.errorTypes,
-                ...(hint ? { hint } : {}),
-            },
-            isError: true,
-        }
-    }
-    const message = err instanceof Error ? err.message : String(err)
-    return {
-        content: [{ type: 'text', text: `Error: ${message}` }],
-        isError: true,
-    }
+    return coreErrorResult(err, { resourceNoun: 'counter' })
 }

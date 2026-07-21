@@ -1,4 +1,4 @@
-import type { MetricaClient } from './client.js'
+import type { YandexClient } from '@boxlab/yandex-mcp-core'
 import {
     CounterResponseSchema,
     CountersResponseSchema,
@@ -25,7 +25,7 @@ import {
  * List counters available to the token (lightweight — no nested goals; fetch
  * those per counter with {@link listGoals} to keep responses small).
  */
-export async function listCounters(client: MetricaClient): Promise<Counter[]> {
+export async function listCounters(client: YandexClient): Promise<Counter[]> {
     const raw = await client.request('/management/v1/counters', {
         per_page: 1000,
     })
@@ -34,7 +34,7 @@ export async function listCounters(client: MetricaClient): Promise<Counter[]> {
 
 /** Get a single counter's settings. */
 export async function getCounter(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<Counter> {
     const raw = await client.request(
@@ -46,7 +46,7 @@ export async function getCounter(
 
 /** List the goals configured on a counter. */
 export async function listGoals(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<Goal[]> {
     const raw = await client.request(
@@ -58,7 +58,7 @@ export async function listGoals(
 
 /** List the saved API segments on a counter (note the /apisegment/ path). */
 export async function listSegments(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<Segment[]> {
     const raw = await client.request(
@@ -70,7 +70,7 @@ export async function listSegments(
 
 /** List the traffic filters on a counter. */
 export async function listFilters(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<Filter[]> {
     const raw = await client.request(
@@ -82,7 +82,7 @@ export async function listFilters(
 
 /** List the URL-normalization operations on a counter. */
 export async function listOperations(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<Operation[]> {
     const raw = await client.request(
@@ -94,7 +94,7 @@ export async function listOperations(
 
 /** List the per-counter access grants (who can see/edit the counter). */
 export async function listGrants(
-    client: MetricaClient,
+    client: YandexClient,
     counterId: number,
 ): Promise<Grant[]> {
     const raw = await client.request(

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { runAuthCli } from '@boxlab/yandex-mcp-core'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { runAuth } from './cli/auth.js'
+import { loadAuthConfig } from './config.js'
 import { createServer } from './mcp/server.js'
 
 async function main(): Promise<void> {
     if (process.argv[2] === 'auth') {
-        await runAuth(process.env, { oob: process.argv.includes('--oob') })
+        await runAuthCli(loadAuthConfig(process.env), process.argv)
         return
     }
 
