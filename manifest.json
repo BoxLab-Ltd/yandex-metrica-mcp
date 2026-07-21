@@ -2,7 +2,7 @@
     "manifest_version": "0.3",
     "name": "yandex-metrica-mcp",
     "display_name": "Yandex Metrica",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Query your Yandex Metrica web analytics — reports, conversions, and raw logs — from an AI agent. Read-only.",
     "author": {
         "name": "BoxLab",
