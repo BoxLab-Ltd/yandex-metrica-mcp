@@ -1,7 +1,7 @@
 # yandex-metrica-mcp
 
 [![CI](https://github.com/BoxLab-Ltd/yandex-metrica-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/BoxLab-Ltd/yandex-metrica-mcp/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/yandex-metrica-mcp.svg)](https://www.npmjs.com/package/yandex-metrica-mcp)
+[![npm](https://badgen.net/npm/v/yandex-metrica-mcp)](https://www.npmjs.com/package/yandex-metrica-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 **Ask your Yandex Metrica analytics in plain language — from Claude, Cursor, or
@@ -15,8 +15,8 @@ small set of flexible, read-only tools.
 > Read-only by design, no secrets stored in the package: interactive login uses
 > a built-in public OAuth client with PKCE, and the server talks only to Yandex.
 
-> Status: early development (v0.1, work in progress). General-purpose: SEO is
-> one of many use cases, not the focus.
+General-purpose: marketing, product analytics, e-commerce and SEO are all fair
+game — the server is not tied to any one use case.
 
 ## Demo
 
@@ -88,7 +88,7 @@ mostly thin, unmaintained, or dump raw data straight into the model's context.
 This server aims to be the well-engineered, well-maintained, open option:
 flexible report tools, strict token/context discipline, read-only by default.
 
-## Features (v0.1)
+## Features
 
 - `run_report` — flexible wrapper over the Reporting API (`/stat/v1/data`).
 - `run_comparison` — compare two periods with absolute and percentage deltas.
@@ -142,9 +142,11 @@ client secret is stored anywhere**. A cached login takes precedence over
 **From your MCP client (no terminal).** Not signed in yet? The server still
 starts — ask your agent to run the `login` tool and it does the same browser
 flow in-process (or returns a URL and takes the code via `submit_code`). Handy
-for GUI clients like Claude Desktop, where there is no terminal to run `auth`. Get a token for an app with the `metrika:read`
-scope at <https://oauth.yandex.ru> and pass it as `YANDEX_METRIKA_TOKEN` — handy
-for CI or non-interactive use.
+for GUI clients like Claude Desktop, where there is no terminal to run `auth`.
+
+**Static token.** Get a token for an app with the `metrika:read` scope at
+<https://oauth.yandex.ru> and pass it as `YANDEX_METRIKA_TOKEN` — handy for CI
+or non-interactive use.
 
 **Own OAuth app (optional).** To use your own app instead of the built-in one,
 set `YANDEX_OAUTH_CLIENT_ID`; add `YANDEX_OAUTH_CLIENT_SECRET` to also enable
