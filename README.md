@@ -63,15 +63,18 @@ Prefer a static token (CI / non-interactive) or your own OAuth app? See
 
 ### Or install as a Claude Code plugin
 
-The repo doubles as a plugin marketplace, so you can install the server through
-Claude Code's plugin system instead of the config above:
+The repo doubles as the plugin marketplace for BoxLab's Yandex MCP family, so
+you can install the server through Claude Code's plugin system instead of the
+config above:
 
 ```bash
 /plugin marketplace add BoxLab-Ltd/yandex-metrica-mcp
 /plugin install yandex-metrica-mcp@boxlab
 ```
 
-Then run `npx yandex-metrica-mcp auth` once to log in.
+Then sign in from the chat with the `login` tool (or run
+`npx yandex-metrica-mcp auth`). The same marketplace also carries
+[`yandex-webmaster-mcp`](https://github.com/BoxLab-Ltd/yandex-webmaster-mcp).
 
 ### Or install as a Claude Desktop extension (.mcpb)
 

@@ -1,5 +1,6 @@
 {
     "name": "boxlab",
+    "description": "BoxLab's Yandex MCP family for Claude Code — Yandex Metrica and Yandex Webmaster servers.",
     "owner": {
         "name": "BoxLab",
         "url": "https://github.com/BoxLab-Ltd"
@@ -9,6 +10,15 @@
             "name": "yandex-metrica-mcp",
             "source": "./",
             "description": "MCP server for Yandex Metrica — query your web analytics in plain language. Secretless PKCE login, read-only, TypeScript."
+        },
+        {
+            "name": "yandex-webmaster-mcp",
+            "source": {
+                "source": "github",
+                "repo": "BoxLab-Ltd/yandex-webmaster-mcp",
+                "ref": "v0.1.1"
+            },
+            "description": "MCP server for Yandex Webmaster — query indexing, search queries, diagnostics and backlinks, and recrawl URLs, in plain language. Secretless PKCE login, read-only by default, TypeScript."
         }
     ]
 }
