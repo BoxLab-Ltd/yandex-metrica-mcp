@@ -252,6 +252,20 @@ describe('formatBytimeResponse', () => {
         })
     })
 
+    it('does not report /bytime total_rows (an interval count) as missing rows', () => {
+        const resp = {
+            query: { date1: '2026-10-23', date2: '2026-10-25' },
+            data: [{ dimensions: [], metrics: [[132, 72, 49]] }],
+            totals: [[132, 72, 49]],
+            total_rows: 3,
+            sampled: false,
+        } as unknown as BytimeResponse
+
+        const out = formatBytimeResponse(resp, [], ['ym:s:users'], 'day', false)
+        expect(out.truncation_notice).toBeUndefined()
+        expect((out.meta as { total_rows: unknown }).total_rows).toBeNull()
+    })
+
     it('steps the date axis by calendar month for group=month (not +30 days)', () => {
         const resp = {
             query: { date1: '2026-01-01', date2: '2026-04-30' },
@@ -281,11 +295,17 @@ describe('formatBytimeResponse', () => {
             sampled: false,
         } as unknown as BytimeResponse
 
-        const out = formatBytimeResponse(resp, [], ['ym:s:visits'], 'all', false)
-        expect((out.time_axis as { dates: unknown }).dates).toBeNull()
-        expect((out.time_axis as { interval_count: number }).interval_count).toBe(
-            1,
+        const out = formatBytimeResponse(
+            resp,
+            [],
+            ['ym:s:visits'],
+            'all',
+            false,
         )
+        expect((out.time_axis as { dates: unknown }).dates).toBeNull()
+        expect(
+            (out.time_axis as { interval_count: number }).interval_count,
+        ).toBe(1)
     })
 
     const axisFor = (

@@ -371,7 +371,8 @@ export function formatBytimeResponse(
                         ? 'time_axis.dates[i] is the START of the bucket for index i of every metric series (week=Monday, month/quarter/year=period start); a mid-period date1/date2 means the first/last bucket may be partial.'
                         : 'Per-interval dates are not derivable here (group all/auto/hour, or a relative date1); each metric is a values array of length interval_count spanning date1..date2.',
             },
-            meta: buildMeta(resp, rows.length),
+            // /bytime puts the interval count in total_rows, not the dimension-row count.
+            meta: buildMeta({ ...resp, total_rows: undefined }, rows.length),
         },
         resp,
     )
