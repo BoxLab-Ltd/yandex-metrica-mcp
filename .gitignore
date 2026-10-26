@@ -11,3 +11,5 @@ coverage/
 # Desktop Extension (.mcpb) build artifacts
 .mcpb-build/
 *.mcpb
+
+evals/results/

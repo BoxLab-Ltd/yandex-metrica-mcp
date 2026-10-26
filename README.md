@@ -112,6 +112,10 @@ flexible report tools, strict token/context discipline, read-only by default.
   redirect, or hands back a URL and takes the pasted code via `submit_code`.
 - Built-in context control: field selection on by default, low default row
   limits, and sampling/quota surfaced back to the model.
+- Analysis hygiene: the server hands every client a short set of rules
+  (exclude robots, compare complete periods, never sum users, use explicit
+  goals, …). The Claude Code plugin adds the fuller
+  [`metrica-hygiene`](skills/metrica-hygiene/SKILL.md) skill.
 
 Planned for later: Streamable HTTP transport, write tools (behind an explicit
 flag).
@@ -193,6 +197,13 @@ bun run typecheck  # tsc --noEmit
 bun run lint       # eslint
 bun test           # bun's test runner
 bun run build      # emit dist/ with tsc (Node-compatible)
+```
+
+The skill has an eval suite in [`evals/`](evals) that runs against mocked
+Metrica tools, so it never touches the real API:
+
+```bash
+claude plugin eval . --ablation none
 ```
 
 ## License
