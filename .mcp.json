@@ -2,7 +2,10 @@
     "mcpServers": {
         "yandex-metrica": {
             "command": "npx",
-            "args": ["-y", "yandex-metrica-mcp"]
+            "args": ["-y", "yandex-metrica-mcp"],
+            "env": {
+                "YANDEX_METRIKA_ENABLE_WRITE": "${YANDEX_METRIKA_ENABLE_WRITE:-}"
+            }
         }
     }
 }

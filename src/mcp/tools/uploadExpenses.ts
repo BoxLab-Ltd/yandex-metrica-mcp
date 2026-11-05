@@ -8,7 +8,7 @@ import {
 } from '../../api/expenses.js'
 import { resolveCounterId, type ToolContext } from '../context.js'
 import { errorResult, toToolResult } from '../format.js'
-import { confirmToken, counterLabel, prepareWrite } from './write.js'
+import { applying, confirmToken, counterLabel, prepareWrite } from './write.js'
 
 const TOOL = 'upload_expenses'
 const MAX_CSV_CHARS = 2_000_000
@@ -129,14 +129,13 @@ export function registerUploadExpenses(
                 )
                 if (!decision.confirmed) return decision.result
 
-                const uploading = await uploadExpenses(
-                    ctx.client,
-                    counterId,
-                    args.csv,
-                    {
-                        provider: args.provider,
-                        comment: args.comment,
-                    },
+                const uploading = await applying(
+                    () =>
+                        uploadExpenses(ctx.client, counterId, args.csv, {
+                            provider: args.provider,
+                            comment: args.comment,
+                        }),
+                    'check the upload history under Expenses in the Metrica interface',
                 )
                 return toToolResult({
                     done: true,

@@ -10,7 +10,7 @@ import {
 import type { Annotation } from '../../api/schemas.js'
 import { resolveCounterId, type ToolContext } from '../context.js'
 import { errorResult, toToolResult } from '../format.js'
-import { confirmToken, counterLabel, prepareWrite } from './write.js'
+import { applying, confirmToken, counterLabel, prepareWrite } from './write.js'
 
 const TOOL = 'manage_annotation'
 
@@ -153,10 +153,9 @@ export function registerManageAnnotation(
                 if (!decision.confirmed) return decision.result
 
                 if (args.action === 'create') {
-                    const created = await createAnnotation(
-                        ctx.client,
-                        counterId,
-                        body!,
+                    const created = await applying(
+                        () => createAnnotation(ctx.client, counterId, body!),
+                        'check describe_counter include=["annotations"]',
                     )
                     return toToolResult({
                         done: true,
@@ -165,11 +164,15 @@ export function registerManageAnnotation(
                     })
                 }
                 if (args.action === 'update') {
-                    const updated = await updateAnnotation(
-                        ctx.client,
-                        counterId,
-                        args.id!,
-                        body!,
+                    const updated = await applying(
+                        () =>
+                            updateAnnotation(
+                                ctx.client,
+                                counterId,
+                                args.id!,
+                                body!,
+                            ),
+                        'check describe_counter include=["annotations"]',
                     )
                     return toToolResult({
                         done: true,
@@ -177,7 +180,10 @@ export function registerManageAnnotation(
                         annotation: updated,
                     })
                 }
-                await deleteAnnotation(ctx.client, counterId, args.id!)
+                await applying(
+                    () => deleteAnnotation(ctx.client, counterId, args.id!),
+                    'check describe_counter include=["annotations"]',
+                )
                 return toToolResult({ done: true, summary })
             } catch (err) {
                 return errorResult(err)

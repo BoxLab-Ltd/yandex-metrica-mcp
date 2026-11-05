@@ -1,4 +1,4 @@
-import { assertWriteAccess } from '@boxlab/yandex-mcp-core'
+import { assertWriteAccess, YandexApiError } from '@boxlab/yandex-mcp-core'
 import { z } from 'zod'
 import { getCounter } from '../../api/metadata.js'
 import type { Counter } from '../../api/schemas.js'
@@ -41,4 +41,25 @@ export function counterLabel(counter: Counter): string {
     return counter.name
         ? `counter ${counter.id} "${counter.name}"`
         : `counter ${counter.id}`
+}
+
+/** Run the mutation itself; a timeout or 5xx leaves its outcome unknown, so say how to check before retrying. */
+export async function applying<T>(
+    fn: () => Promise<T>,
+    check: string,
+): Promise<T> {
+    try {
+        return await fn()
+    } catch (err) {
+        if (
+            err instanceof YandexApiError &&
+            (err.status === 0 || err.status >= 500)
+        ) {
+            throw new Error(
+                `${err.message}. It was not retried and may or may not have been applied — ${check} before trying again.`,
+                { cause: err },
+            )
+        }
+        throw err
+    }
 }

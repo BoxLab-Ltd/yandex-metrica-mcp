@@ -238,6 +238,35 @@ describe('manage_annotation', () => {
     })
 })
 
+describe('a mutation whose outcome is unknown', () => {
+    it('says how to check instead of retrying', async () => {
+        const { calls, fetchImpl } = api()
+        const failing = (async (input: string | URL, init?: RequestInit) => {
+            if ((init?.method ?? 'GET') === 'POST') {
+                calls.push({ method: 'POST', url: new URL(String(input)) })
+                return new Response('{"message":"gateway"}', { status: 504 })
+            }
+            return fetchImpl(input, init)
+        }) as unknown as typeof fetch
+        const call = await connect({ fetchImpl: failing })
+        const args = {
+            counterId: 7,
+            action: 'create',
+            date: '2026-11-01',
+            title: 'X',
+        }
+        const first = await call('manage_annotation', args)
+        const r = await call('manage_annotation', {
+            ...args,
+            confirmToken: first.s.confirm_token,
+        })
+        expect(r.r.isError).toBe(true)
+        expect(r.text).toContain('may or may not have been applied')
+        expect(r.text).toContain('describe_counter')
+        expect(writes(calls)).toHaveLength(1)
+    })
+})
+
 const CSV =
     'Date,UTMSource,UTMCampaign,Expenses,Currency\n2026-10-01,vk,autumn,1200.50,RUB\n2026-10-02,vk,autumn,800,RUB\n'
 
