@@ -1,0 +1,20 @@
+{
+    "name": "yandex-insights",
+    "version": "0.1.0",
+    "description": "Cross-source analysis skills for Yandex Metrica and Yandex Webmaster — investigate a traffic drop, write a weekly report. Uses the yandex-metrica-mcp and yandex-webmaster-mcp plugins; works with Metrica alone.",
+    "author": {
+        "name": "BoxLab",
+        "url": "https://github.com/BoxLab-Ltd"
+    },
+    "homepage": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp/tree/main/plugins/yandex-insights",
+    "repository": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp",
+    "license": "MIT",
+    "keywords": [
+        "yandex",
+        "yandex-metrica",
+        "yandex-webmaster",
+        "analytics",
+        "seo",
+        "skills"
+    ]
+}

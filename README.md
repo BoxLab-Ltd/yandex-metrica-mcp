@@ -74,7 +74,10 @@ config above:
 
 Then sign in from the chat with the `login` tool (or run
 `npx yandex-metrica-mcp auth`). The same marketplace also carries
-[`yandex-webmaster-mcp`](https://github.com/BoxLab-Ltd/yandex-webmaster-mcp).
+[`yandex-webmaster-mcp`](https://github.com/BoxLab-Ltd/yandex-webmaster-mcp)
+and [`yandex-insights`](plugins/yandex-insights) — skills that use both
+servers together, such as investigating a traffic drop
+(`/plugin install yandex-insights@boxlab`).
 
 ### Or install as a Claude Desktop extension (.mcpb)
 

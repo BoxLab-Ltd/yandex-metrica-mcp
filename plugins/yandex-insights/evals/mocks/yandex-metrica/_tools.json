@@ -1,0 +1,458 @@
+{
+    "tools": [
+        {
+            "name": "get_metadata",
+            "title": "Get Metrica metadata",
+            "description": "Discovery tool. Lists the counters available to your token plus a curated catalog of common dimensions and metrics (Metrica has no enumeration API), attribution options and Logs API fields. Call this before run_report or logs_request to use real field names and to find a counterId. For a counter's own goals, segments, filters or grants, use describe_counter. Read-only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Get Metrica metadata",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "describe_counter",
+            "title": "Describe Metrica counter",
+            "description": "Read a single counter's configuration — settings, goals, segments, filters, operations and access grants — choosing sections with `include`. The goals section returns the goal ids needed to build conversion metrics (ym:s:goal<id>reaches / conversionRate) in run_report, so call this with include=[\"goals\"] before any conversion question. To list the account's counters, use get_metadata. Read-only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "counterId": {
+                        "description": "Yandex Metrica counter id. Optional if YANDEX_METRIKA_COUNTER_ID is configured.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "include": {
+                        "description": "Which configuration sections to return. Default [\"settings\",\"goals\"]. \"goals\" gives the goal ids needed for conversion metrics in run_report; \"grants\" is a read-only access audit.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "settings",
+                                "goals",
+                                "segments",
+                                "filters",
+                                "operations",
+                                "grants"
+                            ]
+                        }
+                    },
+                    "fullResponse": {
+                        "description": "If true, return the full raw objects with every field. Default false: a curated subset to save context.",
+                        "type": "boolean"
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Describe Metrica counter",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "run_report",
+            "title": "Run Metrica report",
+            "description": "Query a Yandex Metrica table report (/stat/v1/data): one or more metrics grouped by dimensions over a date range, with optional filter and sort. Read-only. Use get_metadata first to discover valid metric/dimension ids and the account counters.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "counterId": {
+                        "description": "Yandex Metrica counter id. Optional if YANDEX_METRIKA_COUNTER_ID is configured.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "metrics": {
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Metric ids, e.g. [\"ym:s:visits\",\"ym:s:users\"]. Max 20. Discover valid ids with get_metadata. Do not mix ym:s: (visits) and ym:pv: (hits) namespaces in one call."
+                    },
+                    "dimensions": {
+                        "description": "Dimension ids to group by, e.g. [\"ym:s:lastsignTrafficSource\"]. Max 10. Do not mix ym:s: and ym:pv: namespaces.",
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "date1": {
+                        "description": "Start date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "date2": {
+                        "description": "End date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "filters": {
+                        "description": "Metrica filter expression in native syntax, e.g. ym:s:regionCityName=='Moscow' AND ym:pv:URL=@'help'.",
+                        "type": "string"
+                    },
+                    "sort": {
+                        "description": "Sort fields; prefix a field with \"-\" for descending, e.g. [\"-ym:s:visits\"].",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "limit": {
+                        "description": "Rows per page (max 100000). Defaults to a small value to protect context.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000
+                    },
+                    "offset": {
+                        "description": "1-based index of the first row to return, for pagination. Default 1.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "accuracy": {
+                        "description": "Sampling accuracy: low | medium | high | full, or a 0..1 share. Use \"full\" for exact data.",
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "description": "Timezone offset for the report as ±hh:mm, e.g. \"+03:00\". Defaults to the counter timezone.",
+                        "type": "string"
+                    },
+                    "preset": {
+                        "description": "Named Metrica report preset (advanced); can substitute for metrics/dimensions.",
+                        "type": "string"
+                    },
+                    "includeUndefined": {
+                        "description": "Include rows where the first dimension value is undefined (\"Not set\"). Default false.",
+                        "type": "boolean"
+                    },
+                    "fullResponse": {
+                        "description": "If true, include all dimension sub-fields (id, icons, …). Default false: only the dimension name and metric values are returned, to save context.",
+                        "type": "boolean"
+                    }
+                },
+                "required": ["metrics"],
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Run Metrica report",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "run_comparison",
+            "title": "Compare Metrica segments",
+            "description": "Compare two segments/periods (A vs B) for the same metrics and dimensions (/stat/v1/data/comparison). Returns per-metric values for A and B plus the absolute and percentage delta, computed server-side: delta = B − A (segment A is the baseline), delta_pct = (B − A) / A × 100. Defaults to last 7 days (B) vs the prior 7 days (A), so a positive delta means growth. Read-only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "counterId": {
+                        "description": "Yandex Metrica counter id. Optional if YANDEX_METRIKA_COUNTER_ID is configured.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "metrics": {
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Metric ids, e.g. [\"ym:s:visits\",\"ym:s:users\"]. Max 20. Discover valid ids with get_metadata. Do not mix ym:s: (visits) and ym:pv: (hits) namespaces in one call."
+                    },
+                    "dimensions": {
+                        "description": "Dimension ids to group by, e.g. [\"ym:s:lastsignTrafficSource\"]. Max 10. Do not mix ym:s: and ym:pv: namespaces.",
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "date1A": {
+                        "description": "Segment A start date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "date2A": {
+                        "description": "Segment A end date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "filtersA": {
+                        "description": "Filter expression for segment A.",
+                        "type": "string"
+                    },
+                    "date1B": {
+                        "description": "Segment B start date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "date2B": {
+                        "description": "Segment B end date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "filtersB": {
+                        "description": "Filter expression for segment B.",
+                        "type": "string"
+                    },
+                    "sort": {
+                        "description": "Sort fields; prefix a field with \"-\" for descending, e.g. [\"-ym:s:visits\"].",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "limit": {
+                        "description": "Rows per page (max 100000). Defaults to a small value to protect context.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000
+                    },
+                    "offset": {
+                        "description": "1-based index of the first row to return, for pagination. Default 1.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "accuracy": {
+                        "description": "Sampling accuracy: low | medium | high | full, or a 0..1 share. Use \"full\" for exact data.",
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "description": "Timezone offset for the report as ±hh:mm, e.g. \"+03:00\". Defaults to the counter timezone.",
+                        "type": "string"
+                    },
+                    "preset": {
+                        "description": "Named Metrica report preset (advanced); can substitute for metrics/dimensions.",
+                        "type": "string"
+                    },
+                    "includeUndefined": {
+                        "description": "Include rows where the first dimension value is undefined (\"Not set\"). Default false.",
+                        "type": "boolean"
+                    },
+                    "fullResponse": {
+                        "description": "If true, include all dimension sub-fields (id, icons, …). Default false: only the dimension name and metric values are returned, to save context.",
+                        "type": "boolean"
+                    }
+                },
+                "required": ["metrics"],
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Compare Metrica segments",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "run_drilldown",
+            "title": "Drill down a Metrica report",
+            "description": "Return one level of a hierarchical (tree) report (/stat/v1/data/drilldown). Each row has an \"expandable\" flag; pass parentId with the path of dimension keys to expand deeper. Requires dimensions. Read-only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "counterId": {
+                        "description": "Yandex Metrica counter id. Optional if YANDEX_METRIKA_COUNTER_ID is configured.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "metrics": {
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Metric ids, e.g. [\"ym:s:visits\",\"ym:s:users\"]. Max 20. Discover valid ids with get_metadata. Do not mix ym:s: (visits) and ym:pv: (hits) namespaces in one call."
+                    },
+                    "dimensions": {
+                        "description": "Dimension ids to group by, e.g. [\"ym:s:lastsignTrafficSource\"]. Max 10. Do not mix ym:s: and ym:pv: namespaces.",
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "date1": {
+                        "description": "Start date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "date2": {
+                        "description": "End date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "filters": {
+                        "description": "Metrica filter expression in native syntax, e.g. ym:s:regionCityName=='Moscow' AND ym:pv:URL=@'help'.",
+                        "type": "string"
+                    },
+                    "sort": {
+                        "description": "Sort fields; prefix a field with \"-\" for descending, e.g. [\"-ym:s:visits\"].",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "limit": {
+                        "description": "Rows per page (max 100000). Defaults to a small value to protect context.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000
+                    },
+                    "offset": {
+                        "description": "1-based index of the first row to return, for pagination. Default 1.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "accuracy": {
+                        "description": "Sampling accuracy: low | medium | high | full, or a 0..1 share. Use \"full\" for exact data.",
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "description": "Timezone offset for the report as ±hh:mm, e.g. \"+03:00\". Defaults to the counter timezone.",
+                        "type": "string"
+                    },
+                    "preset": {
+                        "description": "Named Metrica report preset (advanced); can substitute for metrics/dimensions.",
+                        "type": "string"
+                    },
+                    "includeUndefined": {
+                        "description": "Include rows where the first dimension value is undefined (\"Not set\"). Default false.",
+                        "type": "boolean"
+                    },
+                    "fullResponse": {
+                        "description": "If true, include all dimension sub-fields (id, icons, …). Default false: only the dimension name and metric values are returned, to save context.",
+                        "type": "boolean"
+                    },
+                    "parentId": {
+                        "description": "Path from the tree root as a list of dimension keys. Omit for the top level.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["metrics"],
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Drill down a Metrica report",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "run_timeseries",
+            "title": "Metrica metrics over time",
+            "description": "Return metrics split into a time series (/stat/v1/data/bytime): each metric comes back as an array of values, one per interval (day/week/month/…) over the date range. Use for trends and charts. Optionally group by dimensions (topKeys rows). Read-only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "counterId": {
+                        "description": "Yandex Metrica counter id. Optional if YANDEX_METRIKA_COUNTER_ID is configured.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "metrics": {
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Metric ids, e.g. [\"ym:s:visits\",\"ym:s:users\"]. Max 20. Discover valid ids with get_metadata. Do not mix ym:s: (visits) and ym:pv: (hits) namespaces in one call."
+                    },
+                    "dimensions": {
+                        "description": "Dimension ids to group by, e.g. [\"ym:s:lastsignTrafficSource\"]. Max 10. Do not mix ym:s: and ym:pv: namespaces.",
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "date1": {
+                        "description": "Start date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "date2": {
+                        "description": "End date as YYYY-MM-DD or relative (today, yesterday, NdaysAgo).",
+                        "type": "string"
+                    },
+                    "group": {
+                        "description": "Time interval granularity. Default day.",
+                        "type": "string",
+                        "enum": [
+                            "all",
+                            "auto",
+                            "hour",
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year"
+                        ]
+                    },
+                    "filters": {
+                        "description": "Metrica filter expression in native syntax, e.g. ym:s:regionCityName=='Moscow' AND ym:pv:URL=@'help'.",
+                        "type": "string"
+                    },
+                    "accuracy": {
+                        "description": "Sampling accuracy: low | medium | high | full, or a 0..1 share. Use \"full\" for exact data.",
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "description": "Timezone offset for the report as ±hh:mm, e.g. \"+03:00\". Defaults to the counter timezone.",
+                        "type": "string"
+                    },
+                    "includeUndefined": {
+                        "description": "Include rows where the first dimension value is undefined (\"Not set\"). Default false.",
+                        "type": "boolean"
+                    },
+                    "topKeys": {
+                        "description": "Max number of dimension rows to chart (max 30). Default 7.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 30
+                    },
+                    "fullResponse": {
+                        "description": "If true, include all dimension sub-fields (id, icons, …). Default false: only the dimension name and metric values are returned, to save context.",
+                        "type": "boolean"
+                    }
+                },
+                "required": ["metrics"],
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Metrica metrics over time",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        }
+    ]
+}

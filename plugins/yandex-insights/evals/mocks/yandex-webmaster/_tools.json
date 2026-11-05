@@ -1,0 +1,430 @@
+{
+    "tools": [
+        {
+            "name": "get_hosts",
+            "title": "List Webmaster hosts",
+            "description": "Discovery tool: list the sites (hosts) available to your Yandex Webmaster token, each with its host_id, URL and verification state. host_id is what every other tool needs to identify a site. Optionally pass `hostId` to also fetch that host summary (SQI, indexed/excluded page counts, site problems); add `sqiHistory` for the SQI over time. Read-only. Call this first.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Optional host id (e.g. \"https:example.com:443\"). When set, the response also includes that host summary. Defaults to YANDEX_WEBMASTER_HOST_ID if configured.",
+                        "type": "string"
+                    },
+                    "sqiHistory": {
+                        "description": "Also return the SQI history in the summary (needs a host). Default false.",
+                        "type": "boolean"
+                    },
+                    "dateFrom": {
+                        "description": "sqiHistory: start date YYYY-MM-DD.",
+                        "type": "string"
+                    },
+                    "dateTo": {
+                        "description": "sqiHistory: end date YYYY-MM-DD.",
+                        "type": "string"
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "List Webmaster hosts",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "search_queries",
+            "title": "Yandex search queries",
+            "description": "Search-query analytics for a host from Yandex Search: impressions (TOTAL_SHOWS), clicks (TOTAL_CLICKS), average show/click position. Read-only.\n• report=\"top\" (default): ranked list of the queries bringing the most traffic, ordered by orderBy. Use this to see which phrases people search.\n• report=\"trend\": a time series. Pass queryId (from a prior \"top\" call) for one query's history over time, or omit it for the site's aggregate trend.\nTip: cross-reference these queries/landing pages with Yandex Metrica (bounce rate, conversions) to find high-impression, low-conversion phrases worth optimizing.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID. List valid ids with get_hosts.",
+                        "type": "string"
+                    },
+                    "report": {
+                        "description": "\"top\" ranked list (default) or \"trend\" time series.",
+                        "type": "string",
+                        "enum": ["top", "trend"]
+                    },
+                    "indicators": {
+                        "description": "Which indicators to return. Default: all four (TOTAL_SHOWS, TOTAL_CLICKS, AVG_SHOW_POSITION, AVG_CLICK_POSITION).",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "TOTAL_SHOWS",
+                                "TOTAL_CLICKS",
+                                "AVG_SHOW_POSITION",
+                                "AVG_CLICK_POSITION"
+                            ]
+                        }
+                    },
+                    "orderBy": {
+                        "description": "report=\"top\" only: rank by TOTAL_SHOWS or TOTAL_CLICKS. Default TOTAL_CLICKS.",
+                        "type": "string",
+                        "enum": ["TOTAL_SHOWS", "TOTAL_CLICKS"]
+                    },
+                    "deviceType": {
+                        "description": "Device bucket. Default ALL.",
+                        "type": "string",
+                        "enum": [
+                            "ALL",
+                            "DESKTOP",
+                            "MOBILE",
+                            "TABLET",
+                            "MOBILE_AND_TABLET"
+                        ]
+                    },
+                    "dateFrom": {
+                        "description": "Start date, YYYY-MM-DD. Default: last week.",
+                        "type": "string"
+                    },
+                    "dateTo": {
+                        "description": "End date, YYYY-MM-DD. Default: today.",
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "report=\"top\" only: rows to return (1-500). Default 50.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500
+                    },
+                    "offset": {
+                        "description": "report=\"top\" only: rows to skip for paging. Default 0.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                    },
+                    "queryId": {
+                        "description": "report=\"trend\" only: return the time series for this specific query (query_id from a prior \"top\" call). Omit for the aggregate trend.",
+                        "type": "string"
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Yandex search queries",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "get_indexing",
+            "title": "Site indexing",
+            "description": "How Yandex crawls and indexes the host. Read-only. Pick a report:\n• report=\"history\" (default): time series of crawled pages grouped by HTTP status class (HTTP_2XX/3XX/4XX/5XX/OTHER) — spot spikes of errors the crawler hits.\n• report=\"crawled\": example crawled URLs with their HTTP code and crawl date.\n• report=\"in_search\": example URLs currently present in Yandex search, with title.\n• report=\"in_search_history\": time series of how many pages are in search.\n• report=\"search_events\": time series of pages that APPEARED_IN_SEARCH or were REMOVED_FROM_SEARCH — use it to date a drop in search visibility.\n• report=\"search_event_samples\": the pages behind those events, with event date and, for removals, the reason (excluded_url_status, e.g. NOT_CANONICAL, DUPLICATE, LOW_QUALITY, NO_INDEX, HTTP_ERROR) and target_url (redirect/canonical/duplicate target).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "report": {
+                        "description": "Which report to return. Default \"history\".",
+                        "type": "string",
+                        "enum": [
+                            "history",
+                            "crawled",
+                            "in_search",
+                            "in_search_history",
+                            "search_events",
+                            "search_event_samples"
+                        ]
+                    },
+                    "dateFrom": {
+                        "description": "Time-series reports: start date YYYY-MM-DD.",
+                        "type": "string"
+                    },
+                    "dateTo": {
+                        "description": "Time-series reports: end date YYYY-MM-DD.",
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "samples reports: rows to return (1-100). Default 20.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "offset": {
+                        "description": "samples reports: rows to skip for paging. Default 0.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Site indexing",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "get_important_urls",
+            "title": "Important pages",
+            "description": "Monitoring of the pages marked as important in Yandex Webmaster. Read-only. For each page: crawl result (HTTP code, crawl date), whether it is in search (and the exclusion reason if not, e.g. HTTP_ERROR, NOT_CANONICAL, DUPLICATE, NO_INDEX), its title/description, and change_indicators — what changed since the previous check (INDEXING_HTTP_CODE, SEARCH_STATUS, TITLE, DESCRIPTION).\n• no `url`: the current state of every monitored page; `changedOnly` keeps just the changed ones.\n• `url`: the change history of that one page.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "A monitored page URL. When set, returns that page change history instead of the list.",
+                        "type": "string"
+                    },
+                    "changedOnly": {
+                        "description": "List mode: return only pages with a change since the previous check. Default false.",
+                        "type": "boolean"
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Important pages",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "get_diagnostics",
+            "title": "Site diagnostics",
+            "description": "Yandex Webmaster site diagnostics: problems detected on the host (e.g. DNS errors, slow response, robots.txt issues, 4xx alerts), each with a severity (FATAL, CRITICAL, POSSIBLE_PROBLEM, RECOMMENDATION). By default returns only ACTIVE problems (state=PRESENT), worst first. Set includeAbsent=true to also list resolved/absent problem types. Read-only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID. List valid ids with get_hosts.",
+                        "type": "string"
+                    },
+                    "includeAbsent": {
+                        "description": "Also list problem types that are currently absent/resolved. Default false.",
+                        "type": "boolean"
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Site diagnostics",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "list_sitemaps",
+            "title": "List sitemaps",
+            "description": "List the Sitemap files Yandex knows for the host, each with its URL, type, last access date, number of URLs and error count, and where it was discovered (robots.txt, webmaster, etc.). Use it to check a sitemap is being read and is error-free. Read-only.\n• source=\"all\" (default): every sitemap Yandex knows, with read status.\n• source=\"user_added\": only the sitemaps added by hand in Webmaster, with the date added.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "Max sitemaps to return (1-100). Default 100.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "source": {
+                        "description": "Which sitemaps to list. Default \"all\".",
+                        "type": "string",
+                        "enum": ["all", "user_added"]
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "List sitemaps",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "get_external_links",
+            "title": "External links",
+            "description": "Inbound (external) links pointing to the host — the backlinks Yandex knows. Read-only.\n• report=\"samples\" (default): example links with source page, target URL and discovery date, plus the total count available.\n• report=\"history\": time series of the total external-link count over time.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "report": {
+                        "description": "Which report to return. Default \"samples\".",
+                        "type": "string",
+                        "enum": ["samples", "history"]
+                    },
+                    "limit": {
+                        "description": "report=\"samples\": rows to return (1-100). Default 20.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "offset": {
+                        "description": "report=\"samples\": rows to skip for paging. Default 0.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "External links",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "get_broken_links",
+            "title": "Broken internal links",
+            "description": "Internal links on the host that lead nowhere, as Yandex sees them. Read-only. Reasons: SITE_ERROR (the target page errors), DISALLOWED_BY_USER (the target does not exist or is closed from indexing), UNSUPPORTED_BY_ROBOT (the robot cannot follow it).\n• report=\"samples\" (default): example links with the page that contains the link, its broken target and discovery date, plus the total count; filter by `indicators`.\n• report=\"history\": broken-link counts per reason over time.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "report": {
+                        "description": "Which report to return. Default \"samples\".",
+                        "type": "string",
+                        "enum": ["samples", "history"]
+                    },
+                    "indicators": {
+                        "description": "report=\"samples\": reasons to include. Default all.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "SITE_ERROR",
+                                "DISALLOWED_BY_USER",
+                                "UNSUPPORTED_BY_ROBOT"
+                            ]
+                        }
+                    },
+                    "dateFrom": {
+                        "description": "report=\"history\": start date YYYY-MM-DD.",
+                        "type": "string"
+                    },
+                    "dateTo": {
+                        "description": "report=\"history\": end date YYYY-MM-DD.",
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "report=\"samples\": rows to return (1-100). Default 20.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "offset": {
+                        "description": "report=\"samples\": rows to skip for paging. Default 0.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Broken internal links",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "recrawl_status",
+            "title": "Recrawl quota & tasks",
+            "description": "Read-only view of the host recrawl activity. With no taskId: the remaining daily quota plus the most recent recrawl tasks and their state (IN_PROGRESS, DONE, FAILED). Pass taskId (from recrawl_submit) to check one task. Use before recrawl_submit to confirm quota is available.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "taskId": {
+                        "description": "Check a single recrawl task by its id (from recrawl_submit). Omit to get quota + recent tasks.",
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "Recent tasks to list when no taskId (1-100). Default 10.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    }
+                },
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Recrawl quota & tasks",
+                "readOnlyHint": true,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        },
+        {
+            "name": "recrawl_submit",
+            "title": "Submit URL for recrawl",
+            "description": "Ask Yandex to recrawl a specific page of the host sooner. NOT read-only: each call consumes one unit of the limited daily recrawl quota (check it with recrawl_status). The URL must belong to the host and be a full absolute URL. Returns the task_id and the remaining quota. Track progress with recrawl_status using the returned task_id.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hostId": {
+                        "description": "Host id (e.g. \"https:example.com:443\"). Defaults to YANDEX_WEBMASTER_HOST_ID.",
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Absolute URL of the page to recrawl, e.g. \"https://example.com/page/\". Must belong to the host."
+                    }
+                },
+                "required": ["url"],
+                "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "annotations": {
+                "title": "Submit URL for recrawl",
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": true
+            },
+            "execution": {
+                "taskSupport": "forbidden"
+            }
+        }
+    ]
+}
