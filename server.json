@@ -6,12 +6,12 @@
         "url": "https://github.com/BoxLab-Ltd/yandex-metrica-mcp",
         "source": "github"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "packages": [
         {
             "registryType": "npm",
             "identifier": "yandex-metrica-mcp",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "transport": {
                 "type": "stdio"
             },
