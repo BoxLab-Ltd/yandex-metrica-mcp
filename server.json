@@ -28,6 +28,11 @@
                     "isRequired": false
                 },
                 {
+                    "name": "YANDEX_METRIKA_ENABLE_WRITE",
+                    "description": "Set to 1 to add the write tools (chart annotations, expense upload). Sign-in then also asks for metrika:write; every change is confirmed.",
+                    "isRequired": false
+                },
+                {
                     "name": "YANDEX_METRIKA_LOGS_DIR",
                     "description": "Directory for Logs API file exports (logs_download in file mode). Defaults to a folder under the OS temp directory.",
                     "isRequired": false

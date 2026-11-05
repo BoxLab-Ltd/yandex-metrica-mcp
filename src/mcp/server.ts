@@ -1,4 +1,5 @@
 import {
+    createMutationConfirmer,
     registerLoginTools,
     resolveTokenProvider,
     YandexClient,
@@ -12,25 +13,30 @@ import {
     type Config,
 } from '../config.js'
 import type { ToolContext } from './context.js'
-import { SERVER_INSTRUCTIONS } from './instructions.js'
+import { SERVER_INSTRUCTIONS, WRITE_INSTRUCTIONS } from './instructions.js'
 import { registerDescribeCounter } from './tools/describeCounter.js'
 import { registerGetMetadata } from './tools/getMetadata.js'
 import { registerLogsClean } from './tools/logsClean.js'
 import { registerLogsDownload } from './tools/logsDownload.js'
 import { registerLogsRequest } from './tools/logsRequest.js'
 import { registerLogsStatus } from './tools/logsStatus.js'
+import { registerManageAnnotation } from './tools/manageAnnotation.js'
 import { registerRunComparison } from './tools/runComparison.js'
 import { registerRunDrilldown } from './tools/runDrilldown.js'
 import { registerRunReport } from './tools/runReport.js'
 import { registerRunTimeseries } from './tools/runTimeseries.js'
+import { registerUploadExpenses } from './tools/uploadExpenses.js'
 
 /**
  * Build a fully configured MCP server: the Metrica API client, the tool
  * context, and all registered tools. Transport is wired up by the caller.
  */
-export function createServer(config: Config = loadConfig()): McpServer {
-    const authConfig = loadAuthConfig()
-    const { provider, store, mode } = resolveTokenProvider(authConfig)
+export function createServer(
+    config: Config = loadConfig(),
+    env: NodeJS.ProcessEnv = process.env,
+): McpServer {
+    const authConfig = loadAuthConfig(env)
+    const { provider, store, mode } = resolveTokenProvider(authConfig, env)
     // stderr only — stdout carries the MCP protocol on the stdio transport.
     console.error(`yandex-metrica-mcp: auth source = ${mode}`)
 
@@ -45,11 +51,26 @@ export function createServer(config: Config = loadConfig()): McpServer {
         lang: config.lang,
     })
 
-    const ctx: ToolContext = { client, config }
+    const writeEnabled = authConfig.writeEnabled === true
     const server = new McpServer(
         { name: SERVER_NAME, version: SERVER_VERSION },
-        { instructions: SERVER_INSTRUCTIONS },
+        {
+            instructions: writeEnabled
+                ? `${SERVER_INSTRUCTIONS}\n${WRITE_INSTRUCTIONS}`
+                : SERVER_INSTRUCTIONS,
+        },
     )
+    const ctx: ToolContext = {
+        client,
+        config,
+        write: writeEnabled
+            ? {
+                  auth: authConfig,
+                  provider,
+                  confirmer: createMutationConfirmer(server),
+              }
+            : undefined,
+    }
 
     registerLoginTools(server, { config: authConfig, provider, store })
     registerGetMetadata(server, ctx)
@@ -62,6 +83,10 @@ export function createServer(config: Config = loadConfig()): McpServer {
     registerLogsStatus(server, ctx)
     registerLogsDownload(server, ctx)
     registerLogsClean(server, ctx)
+    if (writeEnabled) {
+        registerManageAnnotation(server, ctx)
+        registerUploadExpenses(server, ctx)
+    }
 
     return server
 }

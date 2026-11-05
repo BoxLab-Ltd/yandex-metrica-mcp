@@ -25,6 +25,7 @@ export const EMBEDDED_OAUTH_CLIENT_ID = '6f14d1c1384440b1b2915f6d956da84b'
 
 /** OAuth scope this server requests (read-only Metrica access). */
 const SCOPE = 'metrika:read'
+const WRITE_SCOPE = 'metrika:write'
 
 /**
  * Resolved, validated domain configuration for the server. Auth lives in a
@@ -101,6 +102,8 @@ export function loadAuthConfig(
 ): YandexAuthConfig {
     return loadYandexAuthConfig(env, {
         scope: SCOPE,
+        writeScope: WRITE_SCOPE,
+        writeEnv: 'YANDEX_METRIKA_ENABLE_WRITE',
         appName: SERVER_NAME,
         embeddedClientId: EMBEDDED_OAUTH_CLIENT_ID,
         staticTokenEnv: 'YANDEX_METRIKA_TOKEN',

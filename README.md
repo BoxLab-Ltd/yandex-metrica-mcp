@@ -10,9 +10,10 @@ any MCP client.**
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for
 **Yandex Metrica**. It lets an AI agent query your web-analytics data — traffic,
 sources, landing pages, conversions, geography, devices and trends — through a
-small set of flexible, read-only tools.
+small set of flexible, read-only tools — plus opt-in write tools that you
+confirm one change at a time.
 
-> Read-only by design, no secrets stored in the package: interactive login uses
+> Read-only by default, no secrets stored in the package: interactive login uses
 > a built-in public OAuth client with PKCE, and the server talks only to Yandex.
 
 General-purpose: marketing, product analytics, e-commerce and SEO are all fair
@@ -103,7 +104,8 @@ flexible report tools, strict token/context discipline, read-only by default.
 - `get_metadata` — discover the counters on your account and a catalog of common
   dimensions/metrics (and Logs API fields) so the model queries with real names.
 - `describe_counter` — read one counter's configuration (goals, segments,
-  filters, operations, access grants) via an `include` selector. The goals
+  filters, operations, access grants, chart annotations) via an `include`
+  selector. The goals
   section gives the goal ids needed for conversion metrics in `run_report`.
 - `logs_request` / `logs_status` / `logs_download` / `logs_clean` — Logs API:
   export raw, un-sampled session (`visits`) or hit (`hits`) rows. Async lifecycle
@@ -120,15 +122,33 @@ flexible report tools, strict token/context discipline, read-only by default.
   goals, …). The Claude Code plugin adds the fuller
   [`metrica-hygiene`](skills/metrica-hygiene/SKILL.md) skill.
 
-Planned for later: Streamable HTTP transport, write tools (behind an explicit
-flag).
+### Write tools (opt-in)
+
+Off unless you set `YANDEX_METRIKA_ENABLE_WRITE=1`. Then the server adds:
+
+- `manage_annotation` — create, update or delete a note pinned to a chart date
+  (a release, a campaign start, an outage).
+- `upload_expenses` — import ad costs from a non-Yandex source as CSV, so
+  Metrica reports cost and ROI. `dryRun: true` validates the file and shows the
+  rows, dates and totals without sending anything.
+
+With the flag on, sign-in also asks for the `metrika:write` scope — run `auth`
+(or the `login` tool) once more after turning it on. Without the flag the
+sign-in asks for read access only, and tokens issued earlier keep working.
+Every change is confirmed by you before it is sent: your client shows a
+confirmation prompt if it supports MCP elicitation, otherwise the tool returns
+a summary and a one-time token that the agent can use only after you agree.
+The server also checks that your account has edit access to the counter.
+
+Planned for later: Streamable HTTP transport.
 
 ## Requirements
 
 - Node.js >= 18
 - Yandex Metrica credentials with the `metrika:read` scope (see
-  **Authentication**). Whoever the credentials belong to must have access to the
-  counters you query.
+  **Authentication**), plus `metrika:write` for the opt-in write tools.
+  Whoever the credentials belong to must have access to the counters you
+  query.
 
 ## Authentication
 

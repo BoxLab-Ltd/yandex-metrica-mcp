@@ -1,10 +1,22 @@
-import type { YandexClient } from '@boxlab/yandex-mcp-core'
+import type {
+    MutationConfirmer,
+    TokenProvider,
+    YandexAuthConfig,
+    YandexClient,
+} from '@boxlab/yandex-mcp-core'
 import type { Config } from '../config.js'
+
+export interface WriteContext {
+    auth: YandexAuthConfig
+    provider: TokenProvider
+    confirmer: MutationConfirmer
+}
 
 /** Everything a tool handler needs: the API client and config. */
 export interface ToolContext {
     client: YandexClient
     config: Config
+    write?: WriteContext
 }
 
 /**

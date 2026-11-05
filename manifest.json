@@ -3,7 +3,7 @@
     "name": "yandex-metrica-mcp",
     "display_name": "Yandex Metrica",
     "version": "0.3.0",
-    "description": "Query your Yandex Metrica web analytics — reports, conversions, and raw logs — from an AI agent. Read-only.",
+    "description": "Query your Yandex Metrica web analytics — reports, conversions, and raw logs — from an AI agent. Read-only unless you turn on the write tools.",
     "author": {
         "name": "BoxLab",
         "url": "https://github.com/BoxLab-Ltd"
@@ -31,7 +31,8 @@
             "args": ["${__dirname}/dist/index.js"],
             "env": {
                 "YANDEX_METRIKA_COUNTER_ID": "${user_config.counter_id}",
-                "YANDEX_METRIKA_TOKEN": "${user_config.token}"
+                "YANDEX_METRIKA_TOKEN": "${user_config.token}",
+                "YANDEX_METRIKA_ENABLE_WRITE": "${user_config.enable_write}"
             }
         }
     },
@@ -47,6 +48,13 @@
             "title": "Static OAuth token",
             "description": "Optional. Leave empty and sign in with the login tool. For CI/non-interactive use, paste a metrika:read token — stored in your OS keychain.",
             "sensitive": true,
+            "required": false
+        },
+        "enable_write": {
+            "type": "boolean",
+            "title": "Enable write tools",
+            "description": "Adds tools that change the counter (chart annotations, expense upload). Sign-in then also asks for write access, and you confirm every change.",
+            "default": false,
             "required": false
         }
     },

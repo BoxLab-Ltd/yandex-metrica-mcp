@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { listAnnotations } from '../../api/annotations.js'
 import {
     getCounter,
     listFilters,
@@ -23,9 +24,9 @@ export function registerDescribeCounter(
             title: 'Describe Metrica counter',
             description:
                 "Read a single counter's configuration — settings, goals, segments, filters, operations and " +
-                'access grants — choosing sections with `include`. The goals section returns the goal ids needed ' +
+                'access grants and chart annotations — choosing sections with `include`. The goals section returns the goal ids needed ' +
                 'to build conversion metrics (ym:s:goal<id>reaches / conversionRate) in run_report, so call this ' +
-                "with include=[\"goals\"] before any conversion question. To list the account's counters, use " +
+                'with include=["goals"] before any conversion question. To list the account\'s counters, use ' +
                 'get_metadata. Read-only.',
             inputSchema: describeCounterInputShape,
             annotations: {
@@ -42,27 +43,29 @@ export function registerDescribeCounter(
                 const want = (section: string) =>
                     (include as readonly string[]).includes(section)
 
-                const [settings, goals, segments, filters, operations, grants] =
-                    await Promise.all([
-                        want('settings')
-                            ? getCounter(ctx.client, counterId)
-                            : null,
-                        want('goals')
-                            ? listGoals(ctx.client, counterId)
-                            : null,
-                        want('segments')
-                            ? listSegments(ctx.client, counterId)
-                            : null,
-                        want('filters')
-                            ? listFilters(ctx.client, counterId)
-                            : null,
-                        want('operations')
-                            ? listOperations(ctx.client, counterId)
-                            : null,
-                        want('grants')
-                            ? listGrants(ctx.client, counterId)
-                            : null,
-                    ])
+                const [
+                    settings,
+                    goals,
+                    segments,
+                    filters,
+                    operations,
+                    grants,
+                    annotations,
+                ] = await Promise.all([
+                    want('settings') ? getCounter(ctx.client, counterId) : null,
+                    want('goals') ? listGoals(ctx.client, counterId) : null,
+                    want('segments')
+                        ? listSegments(ctx.client, counterId)
+                        : null,
+                    want('filters') ? listFilters(ctx.client, counterId) : null,
+                    want('operations')
+                        ? listOperations(ctx.client, counterId)
+                        : null,
+                    want('grants') ? listGrants(ctx.client, counterId) : null,
+                    want('annotations')
+                        ? listAnnotations(ctx.client, counterId)
+                        : null,
+                ])
 
                 const out: Record<string, unknown> = { counterId }
                 if (settings) {
@@ -71,7 +74,8 @@ export function registerDescribeCounter(
                         : {
                               id: settings.id,
                               name: settings.name ?? null,
-                              site: settings.site2?.site ?? settings.site ?? null,
+                              site:
+                                  settings.site2?.site ?? settings.site ?? null,
                               status: settings.status ?? null,
                               owner_login: settings.owner_login ?? null,
                               permission: settings.permission ?? null,
@@ -128,6 +132,18 @@ export function registerDescribeCounter(
                               perm: g.perm ?? null,
                               created_at: g.created_at ?? null,
                               comment: g.comment ?? null,
+                          }))
+                }
+
+                if (annotations) {
+                    out.annotations = full
+                        ? annotations
+                        : annotations.map(a => ({
+                              id: a.id,
+                              date: a.date,
+                              title: a.title ?? null,
+                              message: a.message ?? null,
+                              group: a.group ?? null,
                           }))
                 }
 

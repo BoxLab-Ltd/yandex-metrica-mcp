@@ -225,6 +225,7 @@ export const COUNTER_SECTIONS = [
     'filters',
     'operations',
     'grants',
+    'annotations',
 ] as const
 
 /** Input shape for describe_counter (one counter, selected config sections). */
@@ -236,7 +237,8 @@ export const describeCounterInputShape = {
         .describe(
             'Which configuration sections to return. Default ["settings","goals"]. ' +
                 '"goals" gives the goal ids needed for conversion metrics in run_report; ' +
-                '"grants" is a read-only access audit.',
+                '"grants" is a read-only access audit; "annotations" lists the notes pinned to chart dates ' +
+                '(releases, campaigns, outages) — useful context when explaining a change.',
         ),
     fullResponse: z
         .boolean()

@@ -208,6 +208,40 @@ export const GrantsResponseSchema = z.object({
     grants: z.array(GrantSchema).default([]),
 })
 
+export const AnnotationSchema = z
+    .object({
+        id: z.number(),
+        date: z.string(),
+        time: z.string().optional(),
+        title: z.string().optional(),
+        message: z.string().optional(),
+        group: z.string().optional(),
+    })
+    .catchall(z.unknown())
+export type Annotation = z.infer<typeof AnnotationSchema>
+export const AnnotationsResponseSchema = z.object({
+    chart_annotations: z.array(AnnotationSchema).default([]),
+})
+export const AnnotationResponseSchema = z.object({
+    chart_annotation: AnnotationSchema,
+})
+
+export const ExpenseUploadingSchema = z
+    .object({
+        id: z.number(),
+        create_time: z.string().optional(),
+        source_quantity: z.number().optional(),
+        provider: z.string().optional(),
+        comment: z.string().optional(),
+        type: z.string().optional(),
+        status: z.string().optional(),
+    })
+    .catchall(z.unknown())
+export type ExpenseUploading = z.infer<typeof ExpenseUploadingSchema>
+export const ExpenseUploadingResponseSchema = z.object({
+    uploading: ExpenseUploadingSchema,
+})
+
 /**
  * Logs API request lifecycle statuses. Kept as a plain string in the schema
  * (lenient, tolerates drift); these constants drive the ready/terminal logic.
