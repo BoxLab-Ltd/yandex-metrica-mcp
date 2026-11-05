@@ -75,10 +75,9 @@ config above:
 
 Then sign in from the chat with the `login` tool (or run
 `npx yandex-metrica-mcp auth`). The same marketplace also carries
-[`yandex-webmaster-mcp`](https://github.com/BoxLab-Ltd/yandex-webmaster-mcp)
-and [`yandex-insights`](plugins/yandex-insights) — skills that use both
-servers together, such as investigating a traffic drop
-(`/plugin install yandex-insights@boxlab`).
+[`yandex-webmaster-mcp`](https://github.com/BoxLab-Ltd/yandex-webmaster-mcp).
+To turn on the write tools in the plugin, start Claude Code with
+`YANDEX_METRIKA_ENABLE_WRITE=1` in the environment.
 
 ### Or install as a Claude Desktop extension (.mcpb)
 
