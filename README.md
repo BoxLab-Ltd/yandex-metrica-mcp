@@ -140,7 +140,24 @@ confirmation prompt if it supports MCP elicitation, otherwise the tool returns
 a summary and a one-time token that the agent can use only after you agree.
 The server also checks that your account has edit access to the counter.
 
-Planned for later: Streamable HTTP transport.
+### Local HTTP mode
+
+By default the server talks stdio, started by your MCP client. For clients
+that connect by URL, or to share one running server between several clients,
+start it over Streamable HTTP:
+
+```bash
+npx yandex-metrica-mcp --http            # http://127.0.0.1:7801/mcp
+npx yandex-metrica-mcp --http --port 9000
+```
+
+Or set `MCP_TRANSPORT=http` (and `MCP_HTTP_PORT`). Every client gets its own
+session; they share one sign-in and one request budget. The server listens on
+`127.0.0.1` only and rejects requests whose `Host` or `Origin` is not local,
+so a web page cannot reach it. To listen on another interface
+(`--host 0.0.0.0`, e.g. in Docker) you must set `MCP_HTTP_TOKEN`; clients then
+send `Authorization: Bearer <token>`. This is a local mode, not hosting: one
+user, one Yandex account.
 
 ## Requirements
 

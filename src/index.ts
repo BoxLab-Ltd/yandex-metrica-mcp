@@ -1,8 +1,14 @@
 #!/usr/bin/env node
-import { runAuthCli } from '@boxlab/yandex-mcp-core'
+import {
+    parseTransportOptions,
+    runAuthCli,
+    serveHttp,
+} from '@boxlab/yandex-mcp-core'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { loadAuthConfig } from './config.js'
-import { createServer } from './mcp/server.js'
+import { createServerFactory } from './mcp/server.js'
+
+const DEFAULT_HTTP_PORT = 7801
 
 async function main(): Promise<void> {
     if (process.argv[2] === 'auth') {
@@ -10,9 +16,19 @@ async function main(): Promise<void> {
         return
     }
 
-    const server = createServer()
-    const transport = new StdioServerTransport()
-    await server.connect(transport)
+    const transport = parseTransportOptions(process.argv, process.env, {
+        port: DEFAULT_HTTP_PORT,
+    })
+    const createSession = createServerFactory()
+    if (transport.mode === 'http') {
+        const http = await serveHttp(createSession, transport)
+        console.error(`yandex-metrica-mcp: serving MCP at ${http.url}`)
+        const stop = () => void http.close().then(() => process.exit(0))
+        process.once('SIGINT', stop)
+        process.once('SIGTERM', stop)
+        return
+    }
+    await createSession().connect(new StdioServerTransport())
     // The process now stays alive serving MCP requests over stdio.
 }
 

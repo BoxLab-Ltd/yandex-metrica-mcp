@@ -27,14 +27,19 @@ import { registerRunReport } from './tools/runReport.js'
 import { registerRunTimeseries } from './tools/runTimeseries.js'
 import { registerUploadExpenses } from './tools/uploadExpenses.js'
 
-/**
- * Build a fully configured MCP server: the Metrica API client, the tool
- * context, and all registered tools. Transport is wired up by the caller.
- */
+/** Build a fully configured MCP server. Transport is wired up by the caller. */
 export function createServer(
     config: Config = loadConfig(),
     env: NodeJS.ProcessEnv = process.env,
 ): McpServer {
+    return createServerFactory(config, env)()
+}
+
+// Sessions share the token and API client, so HTTP clients together stay under Metrica's concurrency cap.
+export function createServerFactory(
+    config: Config = loadConfig(),
+    env: NodeJS.ProcessEnv = process.env,
+): () => McpServer {
     const authConfig = loadAuthConfig(env)
     const { provider, store, mode } = resolveTokenProvider(authConfig, env)
     // stderr only — stdout carries the MCP protocol on the stdio transport.
@@ -52,41 +57,43 @@ export function createServer(
     })
 
     const writeEnabled = authConfig.writeEnabled === true
-    const server = new McpServer(
-        { name: SERVER_NAME, version: SERVER_VERSION },
-        {
-            instructions: writeEnabled
-                ? `${SERVER_INSTRUCTIONS}\n${WRITE_INSTRUCTIONS}`
-                : SERVER_INSTRUCTIONS,
-        },
-    )
-    const ctx: ToolContext = {
-        client,
-        config,
-        write: writeEnabled
-            ? {
-                  auth: authConfig,
-                  provider,
-                  confirmer: createMutationConfirmer(server),
-              }
-            : undefined,
-    }
+    return () => {
+        const server = new McpServer(
+            { name: SERVER_NAME, version: SERVER_VERSION },
+            {
+                instructions: writeEnabled
+                    ? `${SERVER_INSTRUCTIONS}\n${WRITE_INSTRUCTIONS}`
+                    : SERVER_INSTRUCTIONS,
+            },
+        )
+        const ctx: ToolContext = {
+            client,
+            config,
+            write: writeEnabled
+                ? {
+                      auth: authConfig,
+                      provider,
+                      confirmer: createMutationConfirmer(server),
+                  }
+                : undefined,
+        }
 
-    registerLoginTools(server, { config: authConfig, provider, store })
-    registerGetMetadata(server, ctx)
-    registerDescribeCounter(server, ctx)
-    registerRunReport(server, ctx)
-    registerRunComparison(server, ctx)
-    registerRunDrilldown(server, ctx)
-    registerRunTimeseries(server, ctx)
-    registerLogsRequest(server, ctx)
-    registerLogsStatus(server, ctx)
-    registerLogsDownload(server, ctx)
-    registerLogsClean(server, ctx)
-    if (writeEnabled) {
-        registerManageAnnotation(server, ctx)
-        registerUploadExpenses(server, ctx)
-    }
+        registerLoginTools(server, { config: authConfig, provider, store })
+        registerGetMetadata(server, ctx)
+        registerDescribeCounter(server, ctx)
+        registerRunReport(server, ctx)
+        registerRunComparison(server, ctx)
+        registerRunDrilldown(server, ctx)
+        registerRunTimeseries(server, ctx)
+        registerLogsRequest(server, ctx)
+        registerLogsStatus(server, ctx)
+        registerLogsDownload(server, ctx)
+        registerLogsClean(server, ctx)
+        if (writeEnabled) {
+            registerManageAnnotation(server, ctx)
+            registerUploadExpenses(server, ctx)
+        }
 
-    return server
+        return server
+    }
 }
