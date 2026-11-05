@@ -19,6 +19,9 @@ which checks they could not run.
 - **`traffic-drop`** — why traffic or conversions fell: confirm the drop,
   date it, find the segment that moved, tell a tracking break from a real
   loss, and check indexing and search causes in Webmaster.
+- **`weekly-report`** — a one-screen report for the last full week against
+  the week before: traffic and explicit-goal conversions without robots, the
+  few changes above the noise bar, search health and how fresh it is.
 
 ## Evals
 
